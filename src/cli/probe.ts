@@ -28,8 +28,8 @@ async function main(): Promise<void> {
     const probe = await probeIndex(asset.address);
     process.stdout.write(
       pad(asset.symbol, 10) +
-        padStart(exact(probe.poolPrice), 24) +
-        padStart(exact(probe.indexPrice), 24) +
+        padStart(exact(probe.okxMarketPrice), 24) +
+        padStart(exact(probe.okxIndexPrice), 24) +
         padStart(pct(probe.divergence, 4), 14) +
         padStart(probe.identical ? "yes" : "no", 12) +
         "\n",
@@ -40,8 +40,8 @@ async function main(): Promise<void> {
   for (const { symbol, probe } of await probeControls(CONTROL_TOKENS)) {
     process.stdout.write(
       pad(symbol, 10) +
-        padStart(exact(probe.poolPrice), 24) +
-        padStart(exact(probe.indexPrice), 24) +
+        padStart(exact(probe.okxMarketPrice), 24) +
+        padStart(exact(probe.okxIndexPrice), 24) +
         padStart(pct(probe.divergence, 4), 14) +
         padStart(probe.identical ? "yes" : "no", 12) +
         "\n",

@@ -47,42 +47,78 @@ export interface TrackedAsset {
   decimals: number;
 }
 
-/** A single `swap quote` observation at one trade size. */
+/**
+ * A single routed quote at one trade size.
+ *
+ * Deliberately not called "slippage". Realised slippage is a settled trade measured
+ * against the quote that preceded it. This is a quote curve across sizes, which is a
+ * different thing, and conflating the two would overstate what we know.
+ */
 export interface QuoteObservation {
-  /** Size in whole tokens that was quoted. */
+  /** Size in whole wrapped tokens that was quoted. */
   sizeTokens: number;
-  /** Notional at the spot price, in the quote currency. */
+  /** Notional at the router's reference unit price, in the quote currency. */
   notional: number;
-  /** Spot unit price reported by the router. */
-  spotPrice: number;
-  /** Proceeds divided by size — what the trade actually clears at. */
-  effectivePrice: number;
-  /** effectivePrice / spotPrice - 1, as a fraction. Negative for sells. */
-  priceImpact: number;
+  /**
+   * Unit price reported by the router alongside the quote.
+   *
+   * OKX documents this as a general USD reference price, not the spot price of any
+   * specific pool, so it is named accordingly and never presented as a pool price.
+   */
+  routerUnitPrice: number;
+  /** Quote-token proceeds divided by size sold. Denominated per *wrapped* token. */
+  effectivePricePerWrapped: number;
+  /**
+   * Effective price restated per underlying token, so it can be compared with the
+   * issuer reference. Null when the wrapper rate is unverified.
+   */
+  effectivePricePerUnderlying: number | null;
+  /** effectivePricePerWrapped / routerUnitPrice - 1. Cost of size, not realised slippage. */
+  sizeImpact: number;
   /** Routing split, e.g. "Uniswap V3 52.57%". Empty when the router gave no breakdown. */
   route: string[];
 }
 
 /** `market price` vs `market index` for one token. */
 export interface IndexProbe {
-  poolPrice: number | null;
-  indexPrice: number | null;
-  /** indexPrice / poolPrice - 1. Null when either side is missing. */
+  /**
+   * Value returned by `onchainos market price`.
+   *
+   * Named for its source, not its meaning: it is OKX's market price for the token, and
+   * we have not read any specific pool's reserves to call it a pool spot price.
+   */
+  okxMarketPrice: number | null;
+  okxIndexPrice: number | null;
+  /** okxIndexPrice / okxMarketPrice - 1. Null when either side is missing. */
   divergence: number | null;
   /**
-   * True when the two feeds are byte-identical. For tokenized stocks this has been
-   * observed to hold exactly, while control tokens (USDG, WOKB) diverge — which is
-   * the whole reason this probe exists.
+   * True when the two feeds return exactly the same value.
+   *
+   * This is an observation about two API responses, not a claim about how the index is
+   * constructed. Control tokens diverge, which is what makes the equality on the
+   * equities worth recording.
    */
   identical: boolean;
 }
+
+/** Whether the issuer quote's own production time is known to us. */
+export type SourceAgeStatus = "source_timestamp_known" | "source_timestamp_unknown";
 
 /** Issuer-published indicative price. */
 export interface ReferenceQuote {
   symbol: string;
   quote: number | null;
-  /** When we fetched it. The issuer does not return its own timestamp on this endpoint. */
+  /** When our request completed. Says nothing about when the price was produced. */
   fetchedAt: string;
+  /**
+   * When the source produced the price, if it tells us.
+   *
+   * The public `price-data` endpoint returns a bare `{ quote }` with no timestamp, so
+   * this is normally null. A freshly fetched response is not the same as a freshly
+   * produced price and must never be displayed as "0 minutes old".
+   */
+  sourceTimestamp: string | null;
+  sourceAgeStatus: SourceAgeStatus;
   /** Populated when the request failed, so the UI can show a blank instead of a guess. */
   error: string | null;
 }
@@ -103,24 +139,87 @@ export interface PoolSnapshot {
  * one, and the UI renders missing data as missing rather than filling it in.
  */
 export interface Sample {
+  /** Unique id for this observation, so a row can be cited without ambiguity. */
+  sampleId: string;
   sampledAt: string;
+  /** Wall-clock duration of the whole observation, for latency auditing. */
+  durationMs: number;
+
   symbol: string;
   underlying: string;
+  /** Underlying token on X Layer, issuer-confirmed. */
   address: string;
+  /** Wrapped token the pools actually quote against. */
+  wrappedAddress: string;
 
+  /** Locally derived session, kept as a cross-check against the issuer's own state. */
   session: SessionState;
+  /** Issuer's declared trading state. Authoritative when present. */
+  issuerTrading: IssuerTradingStateRecord;
+
   index: IndexProbe;
   reference: ReferenceQuote;
 
-  /** Quotes at the configured ladder of trade sizes. */
+  /** Wrapped-to-underlying conversion, and whether it could be verified. */
+  normalization: NormalizationRecord;
+
+  /** Quotes across the configured ladder of trade sizes. */
   quotes: QuoteObservation[];
 
-  /** Pool price minus issuer reference, as a fraction of the reference. */
+  /**
+   * Difference between the size-matched effective price (per underlying) and the issuer
+   * reference, as a fraction of the reference.
+   *
+   * Null whenever normalization is unverified — an unnormalised comparison carries an
+   * error several times larger than the quantity being measured.
+   */
   referenceGap: number | null;
+  /** Ladder rung the gap was computed from, so the comparison is reproducible. */
+  referenceGapBasisTokens: number | null;
+
+  /**
+   * Same comparison at the smallest quoted size, where size impact is negligible.
+   *
+   * Kept separate on purpose. `referenceGap` at the basis size folds two distinct
+   * effects together — how the market is priced relative to the reference, and what it
+   * costs to trade in size. Reporting only the combined figure would attribute execution
+   * cost to mispricing.
+   */
+  referenceGapAtMinSize: number | null;
+  referenceGapMinSizeTokens: number | null;
 
   pools: PoolSnapshot[];
   totalPoolLiquidityUsd: number | null;
 
+  /** Provenance: which tooling produced this row. */
+  cliVersion: string | null;
+  calcVersion: string;
+
   /** Non-fatal problems encountered while building this sample. */
   warnings: string[];
 }
+
+export interface IssuerTradingStateRecord {
+  currentPeriod: string | null;
+  openNow: boolean | null;
+  nextChangeAt: string | null;
+  tradingHoursMode: string | null;
+  isTradingHalted: boolean | null;
+  maxOrderFiatValue: number | null;
+  exchange: string | null;
+  fetchedAt: string;
+  error: string | null;
+}
+
+export interface NormalizationRecord {
+  status: "verified" | "unverified";
+  /** Underlying tokens represented by one wrapped token. */
+  assetsPerShare: number | null;
+  /** Underlying reported by the wrapper contract, for cross-checking our mapping. */
+  underlyingAddress: string | null;
+  readAt: string;
+  error: string | null;
+}
+
+/** Bumped whenever the derivation of any computed field changes. */
+export const CALC_VERSION = "2026-09-23.2-wrapper-normalized";

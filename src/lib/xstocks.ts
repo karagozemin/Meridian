@@ -51,6 +51,10 @@ export async function fetchReferenceQuote(symbol: string): Promise<ReferenceQuot
       symbol,
       quote,
       fetchedAt,
+      // The endpoint returns a bare { quote }. If it ever starts reporting when the
+      // price was produced, read it here instead of inferring freshness from fetchedAt.
+      sourceTimestamp: null,
+      sourceAgeStatus: "source_timestamp_unknown",
       error: quote === null ? "response contained no numeric quote" : null,
     };
   } catch (cause) {
@@ -58,8 +62,113 @@ export async function fetchReferenceQuote(symbol: string): Promise<ReferenceQuot
       symbol,
       quote: null,
       fetchedAt,
+      sourceTimestamp: null,
+      sourceAgeStatus: "source_timestamp_unknown",
       error: cause instanceof Error ? cause.message : String(cause),
     };
+  }
+}
+
+export interface IssuerTradingState {
+  /** Issuer's own session label, e.g. "market" / "extended" / "overnight" / "closed". */
+  currentPeriod: string | null;
+  openNow: boolean | null;
+  /** ISO instant at which the current period ends. */
+  nextChangeAt: string | null;
+  /** e.g. "TwentyFourFive". */
+  tradingHoursMode: string | null;
+  isTradingHalted: boolean | null;
+  /** Issuer's max order size for the current period. Zero means it will not trade at all. */
+  maxOrderFiatValue: number | null;
+  exchange: string | null;
+  error: string | null;
+  fetchedAt: string;
+}
+
+/**
+ * Reads the issuer's declared trading state for an asset.
+ *
+ * Preferred over deriving the session from a local calendar. The issuer knows its own
+ * holiday schedule, half days and venue changes; a hand-rolled clock only encodes what
+ * we remembered to put in it. Use the local clock as a fallback, not as the source.
+ */
+export async function fetchTradingState(symbol: string): Promise<IssuerTradingState> {
+  const fetchedAt = new Date().toISOString();
+  const empty: IssuerTradingState = {
+    currentPeriod: null,
+    openNow: null,
+    nextChangeAt: null,
+    tradingHoursMode: null,
+    isTradingHalted: null,
+    maxOrderFiatValue: null,
+    exchange: null,
+    error: null,
+    fetchedAt,
+  };
+
+  try {
+    const body = await getJson<{
+      trading?: {
+        currentPeriod?: string;
+        openNow?: boolean;
+        nextChangeAt?: string;
+        tradingHoursMode?: string;
+        isTradingHalted?: boolean;
+        exchange?: { abbreviation?: string };
+        limitsPerPeriod?: Record<string, { maxOrderFiatValue?: number }>;
+      };
+    }>(`/public/assets/${encodeURIComponent(symbol)}`);
+
+    const trading = body.trading;
+    if (!trading) return { ...empty, error: "response contained no trading block" };
+
+    const period = trading.currentPeriod ?? null;
+    const limits = period ? trading.limitsPerPeriod?.[period] : undefined;
+
+    return {
+      currentPeriod: period,
+      openNow: trading.openNow ?? null,
+      nextChangeAt: trading.nextChangeAt ?? null,
+      tradingHoursMode: trading.tradingHoursMode ?? null,
+      isTradingHalted: trading.isTradingHalted ?? null,
+      maxOrderFiatValue: limits?.maxOrderFiatValue ?? null,
+      exchange: trading.exchange?.abbreviation ?? null,
+      error: null,
+      fetchedAt,
+    };
+  } catch (cause) {
+    return { ...empty, error: cause instanceof Error ? cause.message : String(cause) };
+  }
+}
+
+/** Issuer deployment record for one network. */
+export interface Deployment {
+  network: string;
+  address: string;
+  wrapperAddressV2: string | null;
+}
+
+/**
+ * Deployments of an asset, used to confirm our X Layer addresses against the issuer
+ * rather than trusting a token-search result.
+ */
+export async function fetchDeployments(symbol: string): Promise<Deployment[] | null> {
+  try {
+    const body = await getJson<{
+      deployments?: Array<{
+        network?: string;
+        address?: string;
+        wrapperAddressV2?: string | null;
+      }>;
+    }>(`/public/assets/${encodeURIComponent(symbol)}`);
+    if (!body.deployments) return null;
+    return body.deployments.map((d) => ({
+      network: d.network ?? "unknown",
+      address: (d.address ?? "").toLowerCase(),
+      wrapperAddressV2: d.wrapperAddressV2 ? d.wrapperAddressV2.toLowerCase() : null,
+    }));
+  } catch {
+    return null;
   }
 }
 

@@ -42,21 +42,21 @@ async function readPrice(command: "price" | "index", address: string): Promise<n
  * if both reads describe roughly the same instant.
  */
 export async function probeIndex(address: string): Promise<IndexProbe> {
-  const [poolPrice, indexPrice] = await Promise.all([
+  const [okxMarketPrice, okxIndexPrice] = await Promise.all([
     readPrice("price", address),
     readPrice("index", address),
   ]);
 
-  if (poolPrice === null || indexPrice === null || poolPrice === 0) {
-    return { poolPrice, indexPrice, divergence: null, identical: false };
+  if (okxMarketPrice === null || okxIndexPrice === null || okxMarketPrice === 0) {
+    return { okxMarketPrice, okxIndexPrice, divergence: null, identical: false };
   }
 
   return {
-    poolPrice,
-    indexPrice,
-    divergence: indexPrice / poolPrice - 1,
+    okxMarketPrice,
+    okxIndexPrice,
+    divergence: okxIndexPrice / okxMarketPrice - 1,
     // Exact equality is the signal. Near-equality is normal and means nothing.
-    identical: poolPrice === indexPrice,
+    identical: okxMarketPrice === okxIndexPrice,
   };
 }
 

@@ -1,5 +1,6 @@
 import { QUOTE_TOKEN, QUOTE_SIZE_LADDER } from "../config/assets.js";
 import { tryRun } from "../lib/onchainos.js";
+import { toUnderlyingPrice, type WrapperRate } from "../lib/wrapper.js";
 import { X_LAYER_CHAIN_ALIAS, type QuoteObservation, type TrackedAsset } from "../types.js";
 
 /**
@@ -51,6 +52,7 @@ function describeRoute(quote: RawQuote): string[] {
 export async function quoteSize(
   asset: TrackedAsset,
   sizeTokens: number,
+  rate: WrapperRate,
 ): Promise<QuoteObservation | null> {
   const { data } = await tryRun<unknown>([
     "swap",
@@ -68,21 +70,24 @@ export async function quoteSize(
   const quote = firstObject(data);
   if (!quote) return null;
 
-  const spotPrice = Number(quote.dexRouterList?.[0]?.fromToken?.tokenUnitPrice);
+  const routerUnitPrice = Number(quote.dexRouterList?.[0]?.fromToken?.tokenUnitPrice);
   const rawProceeds = Number(quote.toTokenAmount);
-  if (!Number.isFinite(spotPrice) || !Number.isFinite(rawProceeds) || spotPrice <= 0) {
+  if (!Number.isFinite(routerUnitPrice) || !Number.isFinite(rawProceeds) || routerUnitPrice <= 0) {
     return null;
   }
 
+  // Proceeds arrive in the quote token's minimal units. USDG is six decimals, not
+  // eighteen — using the asset's decimals here would be wrong by twelve orders of magnitude.
   const proceeds = rawProceeds / 10 ** QUOTE_TOKEN.decimals;
-  const effectivePrice = proceeds / sizeTokens;
+  const effectivePricePerWrapped = proceeds / sizeTokens;
 
   return {
     sizeTokens,
-    notional: sizeTokens * spotPrice,
-    spotPrice,
-    effectivePrice,
-    priceImpact: effectivePrice / spotPrice - 1,
+    notional: sizeTokens * routerUnitPrice,
+    routerUnitPrice,
+    effectivePricePerWrapped,
+    effectivePricePerUnderlying: toUnderlyingPrice(effectivePricePerWrapped, rate),
+    sizeImpact: effectivePricePerWrapped / routerUnitPrice - 1,
     route: describeRoute(quote),
   };
 }
@@ -95,11 +100,12 @@ export async function quoteSize(
  */
 export async function quoteLadder(
   asset: TrackedAsset,
+  rate: WrapperRate,
   sizes: readonly number[] = QUOTE_SIZE_LADDER,
 ): Promise<QuoteObservation[]> {
   const observations: QuoteObservation[] = [];
   for (const size of sizes) {
-    const observation = await quoteSize(asset, size);
+    const observation = await quoteSize(asset, size, rate);
     if (observation) observations.push(observation);
   }
   return observations;

@@ -18,25 +18,33 @@ function render(sample: Sample): void {
   process.stdout.write(
     `\n${sample.symbol}  (${sample.underlying})  ${sample.address}\n` +
       `  session        : ${sample.session.regime} — ${sample.session.detail}\n` +
-      `  pool price     : ${exact(sample.index.poolPrice)}\n` +
-      `  okx index      : ${exact(sample.index.indexPrice)}` +
+      `  issuer period  : ${sample.issuerTrading.currentPeriod ?? "—"}` +
+      `  (openNow=${sample.issuerTrading.openNow ?? "—"}, next ${sample.issuerTrading.nextChangeAt ?? "—"})\n` +
+      `  wrap rate      : ${sample.normalization.assetsPerShare ?? "—"} underlying per wrapped` +
+      `   [${sample.normalization.status}]\n` +
+      `  okx market px  : ${exact(sample.index.okxMarketPrice)}\n` +
+      `  okx index      : ${exact(sample.index.okxIndexPrice)}` +
       `${sample.index.identical ? "   [identical to pool price]" : ""}\n` +
       `  issuer quote   : ${sample.reference.quote === null ? "—" : sample.reference.quote.toFixed(3)}` +
-      `   (fetched ${sample.reference.fetchedAt})\n` +
-      `  gap to issuer  : ${pct(sample.referenceGap, 4)}\n`,
+      `   (fetched ${sample.reference.fetchedAt}, ${sample.reference.sourceAgeStatus})\n` +
+      `  gap @ min size : ${pct(sample.referenceGapAtMinSize, 4)}` +
+      `   (${sample.referenceGapMinSizeTokens ?? "—"} tokens — pricing, excludes size cost)\n` +
+      `  gap @ basis    : ${pct(sample.referenceGap, 4)}` +
+      `${sample.referenceGapBasisTokens === null ? "" : `   (${sample.referenceGapBasisTokens} tokens — pricing plus size cost)`}\n`,
   );
 
   if (sample.quotes.length > 0) {
     process.stdout.write(
-      `\n  ${pad("size", 8)}${padStart("notional", 14)}${padStart("effective", 14)}${padStart("impact", 10)}   route\n`,
+      `\n  ${pad("size", 8)}${padStart("notional", 14)}${padStart("eff/wrapped", 14)}${padStart("eff/underlying", 16)}${padStart("size impact", 13)}\n`,
     );
     for (const quote of sample.quotes) {
       process.stdout.write(
         `  ${pad(String(quote.sizeTokens), 8)}` +
           padStart(usd(quote.notional, 0), 14) +
-          padStart(usd(quote.effectivePrice), 14) +
-          padStart(pct(quote.priceImpact), 10) +
-          `   ${quote.route.join(", ")}\n`,
+          padStart(usd(quote.effectivePricePerWrapped), 14) +
+          padStart(usd(quote.effectivePricePerUnderlying), 16) +
+          padStart(pct(quote.sizeImpact), 13) +
+          "\n",
       );
     }
   }
