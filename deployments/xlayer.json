@@ -1,0 +1,17 @@
+{
+  "chainId": 196,
+  "chain": "xlayer",
+  "rpc": "https://rpc.xlayer.tech",
+  "contract": "MeridianAttestation",
+  "address": "0x1246cD8Ef1a87B0F984Eb395023e7e23C70aD267",
+  "deployer": "0x6A495d0598033c8372D457594ee60f469dEe7FBf",
+  "attestor": "0x6A495d0598033c8372D457594ee60f469dEe7FBf",
+  "deployTx": "0x2c2b880c724ce3155dcf4dd502d32f16298f87222a480dc8d0292ad0fefe13f6",
+  "firstRecord": {
+    "id": 0,
+    "token": "NVDAx",
+    "tokenAddress": "0xc845b2894dBddd03858fd2D643B4eF725fE0849d",
+    "sessionRegime": 1,
+    "tx": "0x21ede576237fb4b63f712b7f0b77f5f4479e29e21c5899e0716b837cb01acb95"
+  }
+}
