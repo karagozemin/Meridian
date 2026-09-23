@@ -7,6 +7,7 @@ import { version as cliVersion } from "../lib/onchainos.js";
 import { probeIndex } from "./index-probe.js";
 import { fetchPools, totalLiquidity } from "./depth.js";
 import { quoteLadder, nearestByNotional } from "./quotes.js";
+import { readQuoteTokenRate, toUsd } from "./quote-token.js";
 import { CALC_VERSION, type Sample, type TrackedAsset } from "../types.js";
 
 /**
@@ -53,41 +54,47 @@ export async function takeSample(
     warnings.push(`wrapper rate unverified: ${normalization.error ?? "unknown reason"}`);
   }
 
-  const [index, reference, issuerTrading, pools, quotes, resolvedCli] = await Promise.all([
-    probeIndex(asset.address),
-    fetchReferenceQuote(asset.symbol),
-    fetchTradingState(asset.symbol),
-    fetchPools(asset.address),
-    quoteLadder(asset, normalization, sizes),
-    resolveCliVersion(),
-  ]);
+  const [index, reference, issuerTrading, pools, quotes, quoteTokenRate, resolvedCli] =
+    await Promise.all([
+      probeIndex(asset.address),
+      fetchReferenceQuote(asset.symbol),
+      fetchTradingState(asset.symbol),
+      fetchPools(asset.address),
+      quoteLadder(asset, normalization, sizes),
+      readQuoteTokenRate(),
+      resolveCliVersion(),
+    ]);
 
   if (index.okxMarketPrice === null) warnings.push("okx market price unavailable");
   if (index.okxIndexPrice === null) warnings.push("okx index price unavailable");
   if (reference.error) warnings.push(`issuer reference: ${reference.error}`);
   if (issuerTrading.error) warnings.push(`issuer trading state: ${issuerTrading.error}`);
   if (pools.length === 0) warnings.push("no pools returned");
+  if (quoteTokenRate.usdPerQuoteToken === null) {
+    warnings.push(`quote token parity unavailable: ${quoteTokenRate.error ?? "unknown reason"}`);
+  }
   if (quotes.length < sizes.length) {
     warnings.push(`router quoted ${quotes.length} of ${sizes.length} sizes`);
   }
 
-  // Compare like with like: a size-matched effective price, restated per underlying
-  // token, against the issuer's underlying-denominated reference. Any missing piece
-  // yields null rather than a comparison we cannot defend.
+  // Compare like with like. Three conversions have to line up before the difference
+  // means anything: wrapped to underlying (the vault rate), quote token to USD (USDG is
+  // not exactly a dollar), and size to size. Any missing piece yields null rather than a
+  // comparison we cannot defend.
+  const gapAgainstReference = (priceInQuoteToken: number | null): number | null => {
+    const priceUsd = toUsd(priceInQuoteToken, quoteTokenRate);
+    if (priceUsd === null || reference.quote === null || reference.quote === 0) return null;
+    return priceUsd / reference.quote - 1;
+  };
+
   const basis = nearestByNotional(quotes, REFERENCE_BASIS_NOTIONAL);
-  const effective = basis?.effectivePricePerUnderlying ?? null;
-  const referenceGap =
-    effective !== null && reference.quote !== null && reference.quote !== 0
-      ? effective / reference.quote - 1
-      : null;
+  const referenceGap = gapAgainstReference(basis?.effectivePricePerUnderlying ?? null);
 
   // The same comparison at the smallest rung isolates pricing from execution cost.
   const minRung = quotes.length > 0 ? quotes[0] : undefined;
-  const minEffective = minRung?.effectivePricePerUnderlying ?? null;
-  const referenceGapAtMinSize =
-    minEffective !== null && reference.quote !== null && reference.quote !== 0
-      ? minEffective / reference.quote - 1
-      : null;
+  const referenceGapAtMinSize = gapAgainstReference(
+    minRung?.effectivePricePerUnderlying ?? null,
+  );
 
   if (referenceGap === null && normalization.status !== "verified") {
     warnings.push("reference gap suppressed: wrapped-to-underlying rate not verified");
@@ -123,6 +130,7 @@ export async function takeSample(
       error: normalization.error,
     },
     quotes,
+    quoteTokenRate,
     referenceGap,
     referenceGapBasisTokens: basis?.sizeTokens ?? null,
     referenceGapAtMinSize,

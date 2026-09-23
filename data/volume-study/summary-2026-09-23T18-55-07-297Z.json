@@ -1,0 +1,65 @@
+{
+  "runAt": "2026-09-23T18:55:07.297Z",
+  "bar": "30m",
+  "limit": 299,
+  "window": {
+    "startMs": 1789651800000,
+    "endMs": 1790188200000
+  },
+  "results": [
+    {
+      "symbol": "NVDAx",
+      "address": "0xc845b2894dbddd03858fd2d643b4ef725fe0849d",
+      "buckets": {
+        "regular": 1717609.0787544264,
+        "extended": 1812441.4406304995,
+        "overnight": 1587137.2203650312,
+        "closed": 2039910.8464489728
+      },
+      "barsUsed": 298,
+      "barsDropped": 1,
+      "duplicates": 0,
+      "gaps": 0,
+      "windowStart": "2026-09-17T13:30:00.000Z",
+      "windowEnd": "2026-09-23T18:30:00.000Z"
+    },
+    {
+      "symbol": "TSLAx",
+      "address": "0x8ad3c73f833d3f9a523ab01476625f269aeb7cf0",
+      "buckets": {
+        "regular": 778044.2582214036,
+        "extended": 133395.52555897133,
+        "overnight": 66599.08105136486,
+        "closed": 38390.30894964444
+      },
+      "barsUsed": 280,
+      "barsDropped": 1,
+      "duplicates": 0,
+      "gaps": 18,
+      "windowStart": "2026-09-17T13:30:00.000Z",
+      "windowEnd": "2026-09-23T18:30:00.000Z"
+    },
+    {
+      "symbol": "AAPLx",
+      "address": "0x9d275685dc284c8eb1c79f6aba7a63dc75ec890a",
+      "buckets": {
+        "regular": 447636.515678718,
+        "extended": 393672.96310821513,
+        "overnight": 178409.2451578744,
+        "closed": 229403.41010070857
+      },
+      "barsUsed": 293,
+      "barsDropped": 1,
+      "duplicates": 0,
+      "gaps": 5,
+      "windowStart": "2026-09-17T13:30:00.000Z",
+      "windowEnd": "2026-09-23T18:30:00.000Z"
+    }
+  ],
+  "combined": {
+    "regular": 2943289.8526545484,
+    "extended": 2339509.929297686,
+    "overnight": 1832145.5465742704,
+    "closed": 2307704.5654993257
+  }
+}

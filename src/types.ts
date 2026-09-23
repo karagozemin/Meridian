@@ -54,6 +54,21 @@ export interface TrackedAsset {
  * against the quote that preceded it. This is a quote curve across sizes, which is a
  * different thing, and conflating the two would overstate what we know.
  */
+/**
+ * USD value of the token the router denominates output in.
+ *
+ * Kept as its own record rather than folded into the prices, so a reader can see which
+ * parity was applied to a given sample instead of having to trust it.
+ */
+export interface QuoteTokenRate {
+  symbol: string;
+  address: string;
+  usdPerQuoteToken: number | null;
+  deviationFromParity: number | null;
+  fetchedAt: string;
+  error: string | null;
+}
+
 export interface QuoteObservation {
   /** Size in whole wrapped tokens that was quoted. */
   sizeTokens: number;
@@ -173,6 +188,7 @@ export interface Sample {
    * Null whenever normalization is unverified — an unnormalised comparison carries an
    * error several times larger than the quantity being measured.
    */
+  quoteTokenRate: QuoteTokenRate;
   referenceGap: number | null;
   /** Ladder rung the gap was computed from, so the comparison is reproducible. */
   referenceGapBasisTokens: number | null;
@@ -222,4 +238,4 @@ export interface NormalizationRecord {
 }
 
 /** Bumped whenever the derivation of any computed field changes. */
-export const CALC_VERSION = "2026-09-23.2-wrapper-normalized";
+export const CALC_VERSION = "2026-09-23.3-usd-denominated";

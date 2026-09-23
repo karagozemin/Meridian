@@ -27,6 +27,8 @@ function render(sample: Sample): void {
       `${sample.index.identical ? "   [identical to pool price]" : ""}\n` +
       `  issuer quote   : ${sample.reference.quote === null ? "—" : sample.reference.quote.toFixed(3)}` +
       `   (fetched ${sample.reference.fetchedAt}, ${sample.reference.sourceAgeStatus})\n` +
+      `  ${sample.quoteTokenRate.symbol} parity    : ${exact(sample.quoteTokenRate.usdPerQuoteToken)} USD` +
+      `   (${pct(sample.quoteTokenRate.deviationFromParity, 4)} off parity)\n` +
       `  gap @ min size : ${pct(sample.referenceGapAtMinSize, 4)}` +
       `   (${sample.referenceGapMinSizeTokens ?? "—"} tokens — pricing, excludes size cost)\n` +
       `  gap @ basis    : ${pct(sample.referenceGap, 4)}` +

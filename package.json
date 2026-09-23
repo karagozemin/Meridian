@@ -12,7 +12,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sample": "tsx src/cli/sample-once.ts",
     "sampler": "tsx src/cli/sampler.ts",
-    "probe": "tsx src/cli/probe.ts"
+    "probe": "tsx src/cli/probe.ts",
+    "volume-study": "tsx src/cli/volume-study.ts"
   },
   "dependencies": {
     "zod": "^3.23.8"
