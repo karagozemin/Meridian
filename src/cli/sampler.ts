@@ -32,8 +32,10 @@ async function tick(): Promise<void> {
   await appendSamples(samples);
 
   const session = classifySession();
+  // Log the min-size gap, which is the pricing figure. The basis-size gap folds in the
+  // cost of trading size and would read as mispricing in a one-line summary.
   const summary = samples
-    .map((sample) => `${sample.symbol} gap ${pct(sample.referenceGap, 3)}`)
+    .map((sample) => `${sample.symbol} ${pct(sample.referenceGapAtMinSize, 3)}`)
     .join("  ");
   const warningCount = samples.reduce((sum, sample) => sum + sample.warnings.length, 0);
 
