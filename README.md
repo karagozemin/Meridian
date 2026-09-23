@@ -13,11 +13,18 @@ labels every number with where it came from and how old it is.
 ## The problem
 
 Tokenized equities trade continuously on X Layer, but the underlying US market does not.
-Across NVDAx, TSLAx and AAPLx over an eight-day window, **63% of volume occurred outside
-the regular US session** — roughly $9.0M of $14.2M, with $2.3M of that on weekends
-outright.
+Across NVDAx, TSLAx and AAPLx over a fixed six-day window, **68.8% of volume occurred
+outside the regular US session**, and **24.5% of it occurred while no venue was quoting
+the underlying at all** — not pre-market, not the overnight session, simply closed.
 
-During those hours, three things are true at once and none of them are visible at the
+Those two figures are deliberately kept apart. Extended and overnight trading still have a
+reference behind them; only the fully closed share does not. The measurement uses
+30-minute candles because they align exactly to both session boundaries, classifies each
+candle in Eastern Time so it survives daylight-saving shifts, and writes the raw API
+responses to disk so the number can be recomputed against identical input
+(`npm run volume-study`).
+
+Outside regular hours, three things are true at once and none of them are visible at the
 moment of trade:
 
 1. **OKX has no independent reference for these assets.** `market index` is documented as
@@ -31,7 +38,7 @@ moment of trade:
 
 3. **Headline liquidity overstates tradable depth.** NVDAx shows over $1.3M across its
    pools, but only ~59% of that is quoted against a stablecoin, and a $112k sell clears
-   1.7% away from the displayed price.
+   well over a percent away from the displayed price.
 
 ## What Meridian shows
 
