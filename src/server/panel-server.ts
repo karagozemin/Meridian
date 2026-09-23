@@ -5,6 +5,7 @@ import { CONTROL_TOKENS, QUOTE_SIZE_LADDER, findAsset } from "../config/assets.j
 import { probeControls } from "../core/index-probe.js";
 import { presentPanel } from "../core/panel.js";
 import { presentPreparation } from "../core/prepare.js";
+import { presentRecord } from "../core/record.js";
 import { presentSeries } from "../core/series.js";
 import { takeSample } from "../core/sample.js";
 import { readSamples } from "../lib/store.js";
@@ -124,6 +125,20 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   if (url.pathname === "/api/series" && req.method === "GET") {
     const samples = await readSamples();
     sendJson(res, 200, presentSeries(samples));
+    return;
+  }
+
+  if (url.pathname === "/api/record" && req.method === "GET") {
+    const raw = url.searchParams.get("id");
+    if (raw === null || raw.trim() === "") {
+      sendJson(res, 200, await presentRecord(null));
+      return;
+    }
+    if (!/^\d+$/.test(raw) || !Number.isSafeInteger(Number(raw))) {
+      sendJson(res, 400, { error: "id must be a non-negative integer" });
+      return;
+    }
+    sendJson(res, 200, await presentRecord(Number(raw)));
     return;
   }
 

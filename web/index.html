@@ -325,6 +325,13 @@
       </section>
     </div>
 
+    <section id="record-section">
+      <h2>On-chain record</h2>
+      <p class="note" id="record-claim">Loading the record from X Layer.</p>
+      <p class="reason hidden" id="record-reason"></p>
+      <dl class="meta" id="record-meta"></dl>
+    </section>
+
     <footer>
       Meridian shows measured prices and the source each one came from. It does not compute a fair value. A difference from the issuer reference is a measurement, not protection. This page does not submit a trade. The only on-chain protections on a trade are the minimum amount received and the deadline, and both are parameters of the router call, not of this screen.
     </footer>
@@ -578,7 +585,34 @@
       }
     });
 
+    async function loadRecord() {
+      const claim = document.getElementById("record-claim");
+      const reason = document.getElementById("record-reason");
+      try {
+        const response = await fetch("/api/record");
+        const body = await response.json();
+        if (!response.ok || body.error) {
+          claim.textContent = "The on-chain record could not be read.";
+          reason.textContent = body.error || "The contract read failed.";
+          reason.classList.remove("hidden");
+          return;
+        }
+        claim.textContent = body.claim + " Chain " + body.chainId + ", " + body.address + ".";
+        reason.textContent = body.reason ?? "";
+        reason.classList.toggle("hidden", !body.reason);
+        definition(
+          "record-meta",
+          (body.fields || []).map((field) => [field.label, field.reason ? field.text + " — " + field.reason : field.text]),
+        );
+      } catch (error) {
+        claim.textContent = "The on-chain record could not be read.";
+        reason.textContent = "The contract read failed before a response came back.";
+        reason.classList.remove("hidden");
+      }
+    }
+
     void loadSeries();
+    void loadRecord();
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();

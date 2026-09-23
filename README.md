@@ -52,6 +52,7 @@ moment of trade:
 | Is OKX's price independent? | `market price` vs `market index`, with control tokens beside it |
 | Has a corporate action accrued? | Wrapped-to-underlying rate from the vault. One bare token is one share; the wrapper is not 1:1 |
 | Can I prepare a trade? | A second, fresh quote. Effective price, minimum received, gap, and deadline. The first quote is not reused |
+| What was written on X Layer? | The stored measurement, read back from the contract. It proves the claim, not that the price is correct |
 | What could you not check? | Unavailable feeds are shown blank, never estimated |
 
 Meridian does not sign and does not submit a transaction. A deviation from the issuer
@@ -71,6 +72,8 @@ Open [http://localhost:4173](http://localhost:4173). Pick an asset and a size, t
 what window, and the issuer period of each. It does not claim the gap widens on weekends.
 
 **Prepare this trade** takes a new quote and shows how it moved. Nothing is signed.
+The page also reads the latest measurement back from `MeridianAttestation` on X Layer.
+That read does not write, and it does not recompute the price.
 
 ## Verify it yourself
 
@@ -131,6 +134,7 @@ src/
     series.ts           recorded readings for one calculation version
     prepare.ts          fresh quote, difference from the panel, no signature
     attest.ts           one sample → attestation record, or a refusal
+    record.ts           reads one stored measurement back; does not recompute it
   contracts/
     MeridianAttestation.sol
   server/

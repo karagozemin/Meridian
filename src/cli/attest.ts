@@ -5,9 +5,9 @@ import { takeSample } from "../core/sample.js";
 /**
  * Builds the attestation record for one asset at one size and prints it.
  *
- * This does not broadcast. The X Layer account has no OKB for gas, and a record is
- * not written until the contract is deployed and an explicit broadcast is added.
- * A record proves Meridian's claim, not the correctness of the price.
+ * This does not broadcast. The contract is already on X Layer mainnet; this command
+ * only prints the measurement it would write. A record proves Meridian's claim, not
+ * the correctness of the price.
  *
  * Usage: npm run attest -- NVDAx 10
  */
