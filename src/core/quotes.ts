@@ -85,6 +85,8 @@ export async function quoteSize(
     sizeTokens,
     notional: sizeTokens * routerUnitPrice,
     routerUnitPrice,
+    proceedsQuoteToken: proceeds,
+    proceedsUsd: null,
     effectivePricePerWrapped,
     effectivePricePerUnderlying: toUnderlyingPrice(effectivePricePerWrapped, rate),
     // USD restatement waits until the parity read returns. Leaving these null here is

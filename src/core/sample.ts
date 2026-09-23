@@ -93,6 +93,7 @@ export async function takeSample(
 
   const quoted = quotes.map((quote) => ({
     ...quote,
+    proceedsUsd: toUsd(quote.proceedsQuoteToken, quoteTokenRate),
     effectivePriceUsdPerWrapped: toUsd(quote.effectivePricePerWrapped, quoteTokenRate),
     effectivePriceUsdPerUnderlying: toUsd(quote.effectivePricePerUnderlying, quoteTokenRate),
   }));

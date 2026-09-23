@@ -81,6 +81,13 @@ export interface QuoteObservation {
    * specific pool, so it is named accordingly and never presented as a pool price.
    */
   routerUnitPrice: number;
+  /**
+   * What the router would deliver, in whole USDG.
+   * This is the amount a `minReceive` parameter would floor. No tolerance is subtracted.
+   */
+  proceedsQuoteToken: number;
+  /** `proceedsQuoteToken` times the USDG/USD parity. Null when parity was not read. */
+  proceedsUsd: number | null;
   /** Quote-token proceeds divided by size sold. Denominated per *wrapped* token, in USDG. */
   effectivePricePerWrapped: number;
   /**

@@ -89,6 +89,7 @@
       cursor: pointer;
     }
     button:disabled { opacity: 0.55; cursor: progress; }
+    button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
     #status {
       min-height: 1.4em;
       font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -293,6 +294,35 @@
         <h2>Provenance</h2>
         <dl class="meta" id="provenance"></dl>
       </section>
+
+      <button type="button" id="prepare" class="secondary hidden">Prepare this trade</button>
+      <section id="confirm" class="hidden">
+        <h2>Prepared quote</h2>
+        <p class="note" id="confirm-state"></p>
+        <div class="grid">
+          <article class="card">
+            <div class="label">Effective price, USD per underlying share</div>
+            <div class="figure" id="prep-effective"></div>
+            <p class="reason hidden" id="prep-effective-reason"></p>
+          </article>
+          <article class="card">
+            <div class="label">Minimum received</div>
+            <div class="figure" id="prep-min" style="font-size:22px"></div>
+            <p class="reason hidden" id="prep-min-reason"></p>
+            <p class="note" id="prep-units"></p>
+          </article>
+          <article class="card">
+            <div class="label">Gap at this size</div>
+            <div class="figure" id="prep-gap"></div>
+            <p class="reason hidden" id="prep-gap-reason"></p>
+            <p class="label" style="margin-top:14px">Deadline passed to the router</p>
+            <div class="figure" id="prep-deadline" style="font-size:16px"></div>
+          </article>
+        </div>
+        <dl class="meta" id="prep-move"></dl>
+        <p class="note" id="prep-notice"></p>
+        <p class="note" id="prep-protection"></p>
+      </section>
     </div>
 
     <footer>
@@ -458,6 +488,31 @@
         ["calc", view.calcVersion],
         ["cli", view.cliVersion],
       ]);
+      const prepare = document.getElementById("prepare");
+      prepare.dataset.sampleId = view.sampleId;
+      prepare.classList.remove("hidden");
+      document.getElementById("confirm").classList.add("hidden");
+    }
+
+    function showPreparation(view) {
+      document.getElementById("confirm").classList.remove("hidden");
+      document.getElementById("confirm-state").textContent =
+        view.state + ". Fresh quote at " + view.freshTakenAt + ". The panel quote from " + view.panelTakenAt + " was not reused.";
+      field("prep-effective", view.effectiveUsd);
+      field("prep-min", view.minReceive);
+      const units = document.getElementById("prep-units");
+      units.textContent = view.minReceiveUnits.reason
+        ? view.minReceiveUnits.reason
+        : "Router units (USDG, 6 decimals): " + view.minReceiveUnits.text + ". USD value " + view.proceedsUsd.text + ". No tolerance subtracted.";
+      field("prep-gap", view.gap);
+      document.getElementById("prep-deadline").textContent = view.deadline.text;
+      definition("prep-move", [
+        ["panel effective", view.panelEffectiveUsd.text],
+        ["fresh effective", view.freshEffectiveUsd.text],
+        ["quote moved", view.quoteMove.text],
+      ]);
+      document.getElementById("prep-notice").textContent = view.notice;
+      document.getElementById("prep-protection").textContent = view.protection;
     }
 
     async function loadSeries() {
@@ -488,6 +543,40 @@
         windowText.textContent = "The recorded series could not be read.";
       }
     }
+
+    document.getElementById("prepare").addEventListener("click", async () => {
+      const prepare = document.getElementById("prepare");
+      const data = new FormData(form);
+      const symbol = String(data.get("symbol") ?? "");
+      const size = String(data.get("size") ?? "");
+      const sampleId = prepare.dataset.sampleId ?? "";
+      document.getElementById("confirm").classList.add("hidden");
+      status.classList.remove("error");
+      status.textContent = "Taking a fresh quote. The panel reading will not be the one prepared.";
+      prepare.disabled = true;
+      button.disabled = true;
+      try {
+        const response = await fetch(
+          "/api/prepare?symbol=" + encodeURIComponent(symbol) +
+            "&size=" + encodeURIComponent(size) +
+            "&sampleId=" + encodeURIComponent(sampleId),
+        );
+        const body = await response.json();
+        if (!response.ok || body.error) {
+          status.classList.add("error");
+          status.textContent = body.error || "The fresh quote failed.";
+          return;
+        }
+        showPreparation(body);
+        status.textContent = "Prepared " + body.symbol + " from a new quote. Nothing was signed.";
+      } catch (error) {
+        status.classList.add("error");
+        status.textContent = "The fresh quote failed before a sample came back.";
+      } finally {
+        prepare.disabled = false;
+        button.disabled = false;
+      }
+    });
 
     void loadSeries();
 

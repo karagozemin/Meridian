@@ -4,9 +4,11 @@ import { resolve } from "node:path";
 import { CONTROL_TOKENS, QUOTE_SIZE_LADDER, findAsset } from "../config/assets.js";
 import { probeControls } from "../core/index-probe.js";
 import { presentPanel } from "../core/panel.js";
+import { presentPreparation } from "../core/prepare.js";
 import { presentSeries } from "../core/series.js";
 import { takeSample } from "../core/sample.js";
 import { readSamples } from "../lib/store.js";
+import type { Sample } from "../types.js";
 
 /**
  * Serves the single pre-trade page.
@@ -19,6 +21,18 @@ import { readSamples } from "../lib/store.js";
 const PORT = Number(process.env.PORT ?? 4173);
 const PAGE = resolve(process.cwd(), "web/index.html");
 const MAX_SIZE = 10_000;
+
+/** Panel readings kept only so a later prepare can show how the quote moved. Not the sample log. */
+const panelReadings = new Map<string, Sample>();
+
+function rememberPanel(sample: Sample): void {
+  panelReadings.set(sample.sampleId, sample);
+  while (panelReadings.size > 8) {
+    const oldest = panelReadings.keys().next().value;
+    if (oldest === undefined) break;
+    panelReadings.delete(oldest);
+  }
+}
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
@@ -56,7 +70,42 @@ async function handlePanel(url: URL, res: ServerResponse): Promise<void> {
     probeControls(CONTROL_TOKENS),
   ]);
 
+  rememberPanel(sample);
   sendJson(res, 200, presentPanel(sample, controls));
+}
+
+async function handlePrepare(url: URL, res: ServerResponse): Promise<void> {
+  const parsed = parseRequest(url);
+  if ("error" in parsed) {
+    sendJson(res, 400, parsed);
+    return;
+  }
+  const sampleId = url.searchParams.get("sampleId")?.trim() ?? "";
+  const panel = panelReadings.get(sampleId);
+  if (!panel) {
+    sendJson(res, 400, {
+      error: "That panel reading is no longer held. Check the size again, then prepare.",
+    });
+    return;
+  }
+  if (panel.symbol !== parsed.symbol || panel.requestedSizeTokens !== parsed.size) {
+    sendJson(res, 400, { error: "The panel reading does not match this asset and size." });
+    return;
+  }
+
+  const asset = findAsset(parsed.symbol);
+  if (!asset) {
+    sendJson(res, 400, { error: `unknown asset: ${parsed.symbol}` });
+    return;
+  }
+
+  const fresh = await takeSample(asset, QUOTE_SIZE_LADDER, parsed.size);
+  const prepared = presentPreparation(panel, fresh);
+  if (!prepared.ok) {
+    sendJson(res, 400, { error: prepared.reason });
+    return;
+  }
+  sendJson(res, 200, prepared.view);
 }
 
 async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -64,6 +113,11 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
   if (url.pathname === "/api/panel" && req.method === "GET") {
     await handlePanel(url, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prepare" && req.method === "GET") {
+    await handlePrepare(url, res);
     return;
   }
 
