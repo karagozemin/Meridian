@@ -4,7 +4,9 @@ import { resolve } from "node:path";
 import { CONTROL_TOKENS, QUOTE_SIZE_LADDER, findAsset } from "../config/assets.js";
 import { probeControls } from "../core/index-probe.js";
 import { presentPanel } from "../core/panel.js";
+import { presentSeries } from "../core/series.js";
 import { takeSample } from "../core/sample.js";
+import { readSamples } from "../lib/store.js";
 
 /**
  * Serves the single pre-trade page.
@@ -62,6 +64,12 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
   if (url.pathname === "/api/panel" && req.method === "GET") {
     await handlePanel(url, res);
+    return;
+  }
+
+  if (url.pathname === "/api/series" && req.method === "GET") {
+    const samples = await readSamples();
+    sendJson(res, 200, presentSeries(samples));
     return;
   }
 

@@ -184,6 +184,17 @@
     </form>
     <p id="status">Choose an asset and a size. Nothing is shown until a live reading returns.</p>
 
+    <section id="series-section">
+      <h2>Recorded series</h2>
+      <p class="note" id="series-window">Loading the recorded readings.</p>
+      <p class="note" id="series-regimes"></p>
+      <p class="note" id="series-claim"></p>
+      <table>
+        <thead id="series-head"></thead>
+        <tbody id="series-rows"></tbody>
+      </table>
+    </section>
+
     <div id="results" class="hidden">
       <section>
         <h2>Issuer session</h2>
@@ -448,6 +459,37 @@
         ["cli", view.cliVersion],
       ]);
     }
+
+    async function loadSeries() {
+      const windowText = document.getElementById("series-window");
+      try {
+        const response = await fetch("/api/series");
+        const body = await response.json();
+        if (!response.ok || body.error) {
+          windowText.textContent = body.error || "The recorded series could not be read.";
+          return;
+        }
+        windowText.textContent = body.windowText;
+        document.getElementById("series-regimes").textContent = body.regimeText;
+        document.getElementById("series-claim").textContent = body.claimText;
+        head("series-head", body.headers);
+        const rows = document.getElementById("series-rows");
+        rows.replaceChildren();
+        for (const row of body.rows) {
+          const tr = document.createElement("tr");
+          for (const cell of [row.sampledAt, row.symbol, row.issuerPeriod, row.gap, row.sizeTokens]) {
+            const td = document.createElement("td");
+            td.textContent = cell;
+            tr.appendChild(td);
+          }
+          rows.appendChild(tr);
+        }
+      } catch (error) {
+        windowText.textContent = "The recorded series could not be read.";
+      }
+    }
+
+    void loadSeries();
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
