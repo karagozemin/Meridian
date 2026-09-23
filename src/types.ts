@@ -81,13 +81,25 @@ export interface QuoteObservation {
    * specific pool, so it is named accordingly and never presented as a pool price.
    */
   routerUnitPrice: number;
-  /** Quote-token proceeds divided by size sold. Denominated per *wrapped* token. */
+  /** Quote-token proceeds divided by size sold. Denominated per *wrapped* token, in USDG. */
   effectivePricePerWrapped: number;
   /**
-   * Effective price restated per underlying token, so it can be compared with the
-   * issuer reference. Null when the wrapper rate is unverified.
+   * Effective price restated per underlying token, in USDG, so it can be compared with
+   * the issuer reference once USDG is converted to USD. Null when the wrapper rate is
+   * unverified.
    */
   effectivePricePerUnderlying: number | null;
+  /**
+   * `effectivePricePerWrapped` times the USDG/USD parity.
+   * Null when parity was not read. Never copied from the USDG price.
+   */
+  effectivePriceUsdPerWrapped: number | null;
+  /**
+   * `effectivePricePerUnderlying` times the USDG/USD parity.
+   * This is the figure compared with the issuer reference. Null when either the wrapper
+   * rate or the parity is missing.
+   */
+  effectivePriceUsdPerUnderlying: number | null;
   /** effectivePricePerWrapped / routerUnitPrice - 1. Cost of size, not realised slippage. */
   sizeImpact: number;
   /** Routing split, e.g. "Uniswap V3 52.57%". Empty when the router gave no breakdown. */
@@ -204,8 +216,24 @@ export interface Sample {
   referenceGapAtMinSize: number | null;
   referenceGapMinSizeTokens: number | null;
 
+  /**
+   * The size the caller asked about, when this observation was taken for a specific
+   * trade rather than the standing ladder. Null on sampler rows.
+   */
+  requestedSizeTokens: number | null;
+  /**
+   * Gap at `requestedSizeTokens`: pricing plus the cost of that size.
+   * Distinct from `referenceGapAtMinSize`, which excludes size cost.
+   */
+  referenceGapAtRequestedSize: number | null;
+
   pools: PoolSnapshot[];
   totalPoolLiquidityUsd: number | null;
+  /**
+   * Share of `totalPoolLiquidityUsd` sitting in pools quoted against a stablecoin.
+   * Null when no pools were returned. Computed once here so a view cannot redefine it.
+   */
+  stableQuotedShare: number | null;
 
   /** Provenance: which tooling produced this row. */
   cliVersion: string | null;
@@ -231,6 +259,12 @@ export interface NormalizationRecord {
   status: "verified" | "unverified";
   /** Underlying tokens represented by one wrapped token. */
   assetsPerShare: number | null;
+  /**
+   * Raw `convertToAssets(1e18)` integer, as a decimal string.
+   * Kept beside the float so an attestation can store the chain reading without
+   * rounding it back out of a JavaScript number. Null when unverified.
+   */
+  assetsPerShareRaw: string | null;
   /** Underlying reported by the wrapper contract, for cross-checking our mapping. */
   underlyingAddress: string | null;
   readAt: string;

@@ -13,6 +13,11 @@ import type { ReferenceQuote } from "../types.js";
  */
 
 const BASE_URL = "https://api.xstocks.fi/api/v2";
+
+/** Full URL of the issuer quote actually fetched for a symbol. Used in `sourcesHash`. */
+export function referencePriceUrl(symbol: string): string {
+  return `${BASE_URL}/public/assets/${encodeURIComponent(symbol)}/price-data`;
+}
 const TIMEOUT_MS = 12_000;
 
 async function getJson<T>(path: string): Promise<T> {

@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { QUOTE_SIZE_LADDER } from "../config/assets.js";
+import { QUOTE_SIZE_LADDER, STABLE_SYMBOLS } from "../config/assets.js";
 import { fetchReferenceQuote, fetchTradingState } from "../lib/xstocks.js";
 import { classifySession } from "../lib/session.js";
 import { readWrapperRate } from "../lib/wrapper.js";
 import { version as cliVersion } from "../lib/onchainos.js";
 import { probeIndex } from "./index-probe.js";
-import { fetchPools, totalLiquidity } from "./depth.js";
+import { fetchPools, stableQuotedShare, totalLiquidity } from "./depth.js";
 import { quoteLadder, nearestByNotional } from "./quotes.js";
 import { readQuoteTokenRate, toUsd } from "./quote-token.js";
 import { CALC_VERSION, type Sample, type TrackedAsset } from "../types.js";
@@ -17,6 +17,18 @@ import { CALC_VERSION, type Sample, type TrackedAsset } from "../types.js";
  * size is recorded alongside it, so a quote for ~$112k is never reported as a $100k trade.
  */
 const REFERENCE_BASIS_NOTIONAL = 100_000;
+
+/**
+ * The ladder is always quoted in ascending size, with the caller's requested size
+ * included, so the first successful rung is the smallest and the requested size is
+ * present for a direct comparison.
+ */
+function quoteSizes(sizes: readonly number[], requestedSizeTokens: number | null): number[] {
+  const merged = requestedSizeTokens === null ? [...sizes] : [...sizes, requestedSizeTokens];
+  return [...new Set(merged.filter((size) => Number.isFinite(size) && size > 0))].sort(
+    (a, b) => a - b,
+  );
+}
 
 let cachedCliVersion: string | null | undefined;
 
@@ -44,10 +56,12 @@ async function resolveCliVersion(): Promise<string | null> {
 export async function takeSample(
   asset: TrackedAsset,
   sizes: readonly number[] = QUOTE_SIZE_LADDER,
+  requestedSizeTokens: number | null = null,
 ): Promise<Sample> {
   const startedAt = Date.now();
   const sampledAt = new Date().toISOString();
   const warnings: string[] = [];
+  const sizesToQuote = quoteSizes(sizes, requestedSizeTokens);
 
   const normalization = await readWrapperRate(asset.wrappedAddress, asset.address);
   if (normalization.status !== "verified") {
@@ -60,7 +74,7 @@ export async function takeSample(
       fetchReferenceQuote(asset.symbol),
       fetchTradingState(asset.symbol),
       fetchPools(asset.address),
-      quoteLadder(asset, normalization, sizes),
+      quoteLadder(asset, normalization, sizesToQuote),
       readQuoteTokenRate(),
       resolveCliVersion(),
     ]);
@@ -73,9 +87,15 @@ export async function takeSample(
   if (quoteTokenRate.usdPerQuoteToken === null) {
     warnings.push(`quote token parity unavailable: ${quoteTokenRate.error ?? "unknown reason"}`);
   }
-  if (quotes.length < sizes.length) {
-    warnings.push(`router quoted ${quotes.length} of ${sizes.length} sizes`);
+  if (quotes.length < sizesToQuote.length) {
+    warnings.push(`router quoted ${quotes.length} of ${sizesToQuote.length} sizes`);
   }
+
+  const quoted = quotes.map((quote) => ({
+    ...quote,
+    effectivePriceUsdPerWrapped: toUsd(quote.effectivePricePerWrapped, quoteTokenRate),
+    effectivePriceUsdPerUnderlying: toUsd(quote.effectivePricePerUnderlying, quoteTokenRate),
+  }));
 
   // Compare like with like. Three conversions have to line up before the difference
   // means anything: wrapped to underlying (the vault rate), quote token to USD (USDG is
@@ -87,14 +107,26 @@ export async function takeSample(
     return priceUsd / reference.quote - 1;
   };
 
-  const basis = nearestByNotional(quotes, REFERENCE_BASIS_NOTIONAL);
+  const basis = nearestByNotional(quoted, REFERENCE_BASIS_NOTIONAL);
   const referenceGap = gapAgainstReference(basis?.effectivePricePerUnderlying ?? null);
 
   // The same comparison at the smallest rung isolates pricing from execution cost.
-  const minRung = quotes.length > 0 ? quotes[0] : undefined;
+  const minRung = quoted[0];
   const referenceGapAtMinSize = gapAgainstReference(
     minRung?.effectivePricePerUnderlying ?? null,
   );
+
+  const requestedQuote =
+    requestedSizeTokens === null
+      ? undefined
+      : quoted.find((quote) => quote.sizeTokens === requestedSizeTokens);
+  const referenceGapAtRequestedSize =
+    requestedSizeTokens === null
+      ? null
+      : gapAgainstReference(requestedQuote?.effectivePricePerUnderlying ?? null);
+  if (requestedSizeTokens !== null && requestedQuote === undefined) {
+    warnings.push(`router declined the requested size of ${requestedSizeTokens} tokens`);
+  }
 
   if (referenceGap === null && normalization.status !== "verified") {
     warnings.push("reference gap suppressed: wrapped-to-underlying rate not verified");
@@ -125,18 +157,22 @@ export async function takeSample(
     normalization: {
       status: normalization.status,
       assetsPerShare: normalization.assetsPerShare,
+      assetsPerShareRaw: normalization.assetsPerShareRaw,
       underlyingAddress: normalization.underlyingAddress,
       readAt: normalization.readAt,
       error: normalization.error,
     },
-    quotes,
+    quotes: quoted,
     quoteTokenRate,
     referenceGap,
     referenceGapBasisTokens: basis?.sizeTokens ?? null,
     referenceGapAtMinSize,
     referenceGapMinSizeTokens: minRung?.sizeTokens ?? null,
+    requestedSizeTokens,
+    referenceGapAtRequestedSize,
     pools,
     totalPoolLiquidityUsd: totalLiquidity(pools),
+    stableQuotedShare: stableQuotedShare(pools, [...STABLE_SYMBOLS]),
     cliVersion: resolvedCli,
     calcVersion: CALC_VERSION,
     warnings,

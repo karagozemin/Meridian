@@ -38,4 +38,6 @@ logs/
 # Contract artifacts
 artifacts/
 cache/
+out/
+broadcast/
 typechain-types/

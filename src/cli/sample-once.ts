@@ -1,7 +1,6 @@
 import { TRACKED_ASSETS, findAsset } from "../config/assets.js";
 import { takeSample } from "../core/sample.js";
 import { appendSamples } from "../lib/store.js";
-import { stableQuotedShare } from "../core/depth.js";
 import { exact, pct, usd, share, pad, padStart } from "../lib/format.js";
 import type { Sample } from "../types.js";
 
@@ -24,7 +23,7 @@ function render(sample: Sample): void {
       `   [${sample.normalization.status}]\n` +
       `  okx market px  : ${exact(sample.index.okxMarketPrice)}\n` +
       `  okx index      : ${exact(sample.index.okxIndexPrice)}` +
-      `${sample.index.identical ? "   [identical to pool price]" : ""}\n` +
+      `${sample.index.identical ? "   [same value as market price]" : ""}\n` +
       `  issuer quote   : ${sample.reference.quote === null ? "—" : sample.reference.quote.toFixed(3)}` +
       `   (fetched ${sample.reference.fetchedAt}, ${sample.reference.sourceAgeStatus})\n` +
       `  ${sample.quoteTokenRate.symbol} parity    : ${exact(sample.quoteTokenRate.usdPerQuoteToken)} USD` +
@@ -37,14 +36,14 @@ function render(sample: Sample): void {
 
   if (sample.quotes.length > 0) {
     process.stdout.write(
-      `\n  ${pad("size", 8)}${padStart("notional", 14)}${padStart("eff/wrapped", 14)}${padStart("eff/underlying", 16)}${padStart("size impact", 13)}\n`,
+      `\n  ${pad("size", 8)}${padStart("notional", 14)}${padStart("wrapped USDG", 14)}${padStart("underlying USD", 16)}${padStart("size impact", 13)}\n`,
     );
     for (const quote of sample.quotes) {
       process.stdout.write(
         `  ${pad(String(quote.sizeTokens), 8)}` +
           padStart(usd(quote.notional, 0), 14) +
           padStart(usd(quote.effectivePricePerWrapped), 14) +
-          padStart(usd(quote.effectivePricePerUnderlying), 16) +
+          padStart(usd(quote.effectivePriceUsdPerUnderlying), 16) +
           padStart(pct(quote.sizeImpact), 13) +
           "\n",
       );
@@ -52,10 +51,9 @@ function render(sample: Sample): void {
   }
 
   if (sample.pools.length > 0) {
-    const stableShare = stableQuotedShare(sample.pools, ["USDG", "USDC", "USDT"]);
     process.stdout.write(
       `\n  pools (total ${usd(sample.totalPoolLiquidityUsd, 0)}, ` +
-        `${share(stableShare)} stable-quoted):\n`,
+        `${share(sample.stableQuotedShare)} stable-quoted):\n`,
     );
     for (const pool of sample.pools) {
       process.stdout.write(

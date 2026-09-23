@@ -87,6 +87,10 @@ export async function quoteSize(
     routerUnitPrice,
     effectivePricePerWrapped,
     effectivePricePerUnderlying: toUnderlyingPrice(effectivePricePerWrapped, rate),
+    // USD restatement waits until the parity read returns. Leaving these null here is
+    // deliberate: a quote-token price must never be copied into a USD field.
+    effectivePriceUsdPerWrapped: null,
+    effectivePriceUsdPerUnderlying: null,
     sizeImpact: effectivePricePerWrapped / routerUnitPrice - 1,
     route: describeRoute(quote),
   };

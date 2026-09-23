@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Meridian — pre-trade check</title>
+  <style>
+    :root {
+      --paper: #f3efe6;
+      --ink: #1a1814;
+      --muted: #6d675e;
+      --rule: #d4ccbe;
+      --rust: #8c3a22;
+      --mark: #efe4d2;
+      --panel: #faf7f2;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+      line-height: 1.45;
+    }
+    main { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+    header { border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink); padding: 18px 0 16px; }
+    .kicker {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1 { font-size: 42px; font-weight: 500; letter-spacing: -0.03em; margin: 6px 0 0; }
+    h1 span { color: var(--rust); }
+    .lede { max-width: 62ch; margin: 10px 0 0; font-size: 18px; }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 24px;
+      align-items: end;
+      margin: 28px 0 8px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--rule);
+    }
+    fieldset { border: 0; margin: 0; padding: 0; }
+    legend, label {
+      display: block;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .choices { display: flex; gap: 8px; }
+    .choices input { position: absolute; opacity: 0; pointer-events: none; }
+    .choices label {
+      letter-spacing: 0;
+      text-transform: none;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 14px;
+      color: var(--ink);
+      border: 1px solid var(--rule);
+      padding: 8px 12px;
+      margin: 0;
+      cursor: pointer;
+      background: transparent;
+    }
+    .choices input:checked + label { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .choices input:focus-visible + label { outline: 2px solid var(--rust); outline-offset: 2px; }
+    input[type="number"] {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 16px;
+      background: transparent;
+      color: var(--ink);
+      border: 0;
+      border-bottom: 1px solid var(--ink);
+      width: 120px;
+      padding: 8px 0;
+    }
+    button {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 14px;
+      background: var(--rust);
+      color: #faf7f2;
+      border: 0;
+      padding: 12px 18px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.55; cursor: progress; }
+    #status {
+      min-height: 1.4em;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 12px 0 20px;
+    }
+    #status.error { color: var(--rust); }
+    section { margin: 28px 0; }
+    h2 {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .card { background: var(--panel); border: 1px solid var(--rule); padding: 14px 16px 16px; }
+    .card .label {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .figure {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+      margin-top: 8px;
+    }
+    .reason { color: var(--rust); font-size: 13px; margin-top: 6px; }
+    .note { color: var(--muted); font-size: 14px; max-width: 78ch; }
+    .meta {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 4px 16px;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+    .meta dt { color: var(--muted); }
+    .meta dd { margin: 0; }
+    table { width: 100%; border-collapse: collapse; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; }
+    th {
+      text-align: left;
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--ink);
+      padding: 8px 8px 8px 0;
+    }
+    td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+    tr.requested td { background: var(--mark); }
+    .warn { color: var(--rust); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
+    footer { border-top: 1px solid var(--ink); margin-top: 36px; padding-top: 16px; color: var(--muted); font-size: 14px; max-width: 78ch; }
+    .hidden { display: none; }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 34px; }
+      .meta { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="kicker">X Layer · tokenized equities · pre-trade</p>
+      <h1>Meri<span>dian</span></h1>
+      <p class="lede">What a sell of this size actually clears at, set next to the issuer's own reference. Every figure is a measurement. A blank means we could not read it.</p>
+    </header>
+
+    <form id="check">
+      <fieldset>
+        <legend>Asset</legend>
+        <div class="choices">
+          <input type="radio" name="symbol" id="asset-nvda" value="NVDAx" checked />
+          <label for="asset-nvda">NVDAx</label>
+          <input type="radio" name="symbol" id="asset-tsla" value="TSLAx" />
+          <label for="asset-tsla">TSLAx</label>
+          <input type="radio" name="symbol" id="asset-aapl" value="AAPLx" />
+          <label for="asset-aapl">AAPLx</label>
+        </div>
+      </fieldset>
+      <div>
+        <label for="size">Size, wrapped tokens</label>
+        <input id="size" name="size" type="number" min="1" max="10000" step="1" value="10" required />
+      </div>
+      <button type="submit" id="run">Check this size</button>
+    </form>
+    <p id="status">Choose an asset and a size. Nothing is shown until a live reading returns.</p>
+
+    <div id="results" class="hidden">
+      <section>
+        <h2>Issuer session</h2>
+        <dl class="meta" id="session"></dl>
+        <p class="note" id="local-session"></p>
+      </section>
+
+      <section>
+        <h2>This size against the issuer reference</h2>
+        <p class="note hidden" id="withheld"></p>
+        <div class="grid" id="comparison">
+          <article class="card">
+            <div class="label">Effective price, USD per underlying share</div>
+            <div class="figure" id="effective"></div>
+            <p class="reason hidden" id="effective-reason"></p>
+            <p class="note">Fees and route impact included. This is not a fair value.</p>
+          </article>
+          <article class="card">
+            <div class="label">Issuer reference, USD per share</div>
+            <div class="figure" id="reference"></div>
+            <p class="reason hidden" id="reference-reason"></p>
+            <p class="note" id="reference-meta"></p>
+          </article>
+          <article class="card">
+            <div class="label" id="gap-size-label">Gap at requested size</div>
+            <div class="figure" id="gap-size"></div>
+            <p class="reason hidden" id="gap-size-reason"></p>
+            <p class="label" id="gap-min-label" style="margin-top:14px">Gap at smallest size</p>
+            <div class="figure" id="gap-min" style="font-size:20px"></div>
+            <p class="reason hidden" id="gap-min-reason"></p>
+            <p class="note hidden" id="same-size"></p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2>OKX market price and market index</h2>
+        <div class="grid">
+          <article class="card">
+            <div class="label">market price</div>
+            <div class="figure" id="market" style="font-size:18px"></div>
+            <p class="reason hidden" id="market-reason"></p>
+          </article>
+          <article class="card">
+            <div class="label">market index</div>
+            <div class="figure" id="index" style="font-size:18px"></div>
+            <p class="reason hidden" id="index-reason"></p>
+          </article>
+          <article class="card">
+            <div class="label">divergence</div>
+            <div class="figure" id="divergence" style="font-size:18px"></div>
+            <p class="reason hidden" id="divergence-reason"></p>
+          </article>
+        </div>
+        <p class="note" id="index-note"></p>
+        <table>
+          <thead>
+            <tr><th>Control</th><th>market price</th><th>market index</th><th>divergence</th><th></th></tr>
+          </thead>
+          <tbody id="controls"></tbody>
+        </table>
+        <p class="note" id="controls-note"></p>
+      </section>
+
+      <section>
+        <h2 id="parity-heading">Quote-token parity</h2>
+        <dl class="meta" id="parity"></dl>
+      </section>
+
+      <section>
+        <h2>Size ladder</h2>
+        <p class="note">Route at the requested size: <span id="route"></span></p>
+        <table>
+          <thead id="ladder-head"></thead>
+          <tbody id="ladder"></tbody>
+        </table>
+        <p class="note" id="ladder-note"></p>
+      </section>
+
+      <section>
+        <h2>Pools</h2>
+        <dl class="meta" id="pools-summary"></dl>
+        <table>
+          <thead id="pool-head"></thead>
+          <tbody id="pools"></tbody>
+        </table>
+        <p class="note" id="pool-note"></p>
+      </section>
+
+      <section id="warnings-section" class="hidden">
+        <h2>Warnings</h2>
+        <ul id="warnings" class="warn"></ul>
+      </section>
+
+      <section>
+        <h2>Provenance</h2>
+        <dl class="meta" id="provenance"></dl>
+      </section>
+    </div>
+
+    <footer>
+      Meridian shows measured prices and the source each one came from. It does not compute a fair value. A difference from the issuer reference is a measurement, not protection. This page does not submit a trade. The only on-chain protections on a trade are the minimum amount received and the deadline, and both are parameters of the router call, not of this screen.
+    </footer>
+  </main>
+  <script>
+    const form = document.getElementById("check");
+    const status = document.getElementById("status");
+    const results = document.getElementById("results");
+    const button = document.getElementById("run");
+
+    function field(id, value) {
+      const node = document.getElementById(id);
+      const reason = document.getElementById(id + "-reason");
+      node.textContent = value.text;
+      if (reason) {
+        reason.textContent = value.reason ?? "";
+        reason.classList.toggle("hidden", !value.reason);
+      }
+    }
+
+    function rows(id, items) {
+      const body = document.getElementById(id);
+      body.replaceChildren();
+      for (const item of items) {
+        const tr = document.createElement("tr");
+        if (item.requested) tr.className = "requested";
+        for (const cell of item.cells) {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          tr.appendChild(td);
+        }
+        body.appendChild(tr);
+      }
+    }
+
+    function head(id, labels) {
+      const thead = document.getElementById(id);
+      const tr = document.createElement("tr");
+      for (const label of labels) {
+        const th = document.createElement("th");
+        th.textContent = label;
+        tr.appendChild(th);
+      }
+      thead.replaceChildren(tr);
+    }
+
+    function definition(id, pairs) {
+      const list = document.getElementById(id);
+      list.replaceChildren();
+      for (const [term, text] of pairs) {
+        const dt = document.createElement("dt");
+        dt.textContent = term;
+        const dd = document.createElement("dd");
+        dd.textContent = text;
+        list.append(dt, dd);
+      }
+    }
+
+    function show(view) {
+      results.classList.remove("hidden");
+      const withheld = document.getElementById("withheld");
+      const comparison = document.getElementById("comparison");
+      if (view.comparisonHidden) {
+        withheld.textContent = view.comparisonHiddenReason ?? "";
+        withheld.classList.remove("hidden");
+        comparison.classList.add("hidden");
+      } else {
+        withheld.classList.add("hidden");
+        comparison.classList.remove("hidden");
+      }
+
+      field("effective", view.effectiveUsd);
+      field("reference", view.referencePrice);
+      document.getElementById("reference-meta").textContent =
+        view.referenceSource + ". Fetched " + view.referenceFetchedAt + ". " + view.referenceAgeNote;
+      document.getElementById("gap-size-label").textContent = view.requestedSizeLabel;
+      field("gap-size", view.gapAtRequestedSize);
+      document.getElementById("gap-min-label").textContent = view.minSizeLabel;
+      field("gap-min", view.gapAtMinSize);
+      const same = document.getElementById("same-size");
+      same.textContent = view.sameSizeNote ?? "";
+      same.classList.toggle("hidden", !view.sameSizeNote);
+
+      field("market", view.okxMarketPrice);
+      field("index", view.okxIndexPrice);
+      field("divergence", view.indexDivergence);
+      document.getElementById("index-note").textContent = view.indexNote;
+
+      const controls = document.getElementById("controls");
+      controls.replaceChildren();
+      for (const control of view.controls) {
+        const tr = document.createElement("tr");
+        for (const cell of [
+          control.symbol,
+          control.market,
+          control.index,
+          control.divergence,
+          control.identical ? "same value" : "diverged",
+        ]) {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          tr.appendChild(td);
+        }
+        controls.appendChild(tr);
+      }
+      document.getElementById("controls-note").textContent = view.controlsNote;
+
+      document.getElementById("parity-heading").textContent = view.quoteTokenSymbol + " parity applied to this reading";
+      definition("parity", [
+        ["USD per " + view.quoteTokenSymbol, view.quoteTokenParity.text],
+        ["off parity", view.quoteTokenDeviation.text],
+        ["read at", view.quoteTokenFetchedAt],
+      ]);
+      const parityReason = view.quoteTokenParity.reason;
+      if (parityReason) {
+        const note = document.createElement("p");
+        note.className = "reason";
+        note.textContent = parityReason;
+        document.getElementById("parity").append(note);
+      }
+
+      document.getElementById("route").textContent = view.requestedRoute;
+      head("ladder-head", view.ladderHeaders);
+      rows("ladder", view.ladder);
+      document.getElementById("ladder-note").textContent = view.ladderNote;
+
+      definition("pools-summary", [
+        ["headline liquidity", view.totalLiquidity.text],
+        ["stable-quoted share", view.stableShare.text],
+      ]);
+      head("pool-head", view.poolHeaders);
+      rows("pools", view.pools);
+      document.getElementById("pool-note").textContent = view.poolNote;
+
+      const warnings = document.getElementById("warnings");
+      const warningSection = document.getElementById("warnings-section");
+      warnings.replaceChildren();
+      warningSection.classList.toggle("hidden", view.warnings.length === 0);
+      for (const warning of view.warnings) {
+        const li = document.createElement("li");
+        li.textContent = warning;
+        warnings.appendChild(li);
+      }
+
+      definition("session", [
+        ["currentPeriod", view.issuerPeriod.text],
+        ["openNow", view.issuerOpenNow.text],
+        ["next change", view.issuerNextChange.text],
+        ["halted", view.issuerHalt.text],
+        ["hours", view.issuerHours.text],
+        ["wrapper rate", view.wrapRate.text + " [" + view.normalizationStatus + "]"],
+      ]);
+      document.getElementById("local-session").textContent = view.localSessionCrossCheck;
+
+      definition("provenance", [
+        ["sample", view.sampleId],
+        ["taken at", view.sampledAt],
+        ["duration", view.durationMs],
+        ["asset", view.symbol + " (" + view.underlying + ")"],
+        ["address", view.address],
+        ["calc", view.calcVersion],
+        ["cli", view.cliVersion],
+      ]);
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      const symbol = String(data.get("symbol") ?? "");
+      const size = String(data.get("size") ?? "");
+      results.classList.add("hidden");
+      status.classList.remove("error");
+      status.textContent = "Reading the router, the issuer, and X Layer. This is a live reading, not a cached price.";
+      button.disabled = true;
+      try {
+        const response = await fetch("/api/panel?symbol=" + encodeURIComponent(symbol) + "&size=" + encodeURIComponent(size));
+        const body = await response.json();
+        if (!response.ok || body.error) {
+          status.classList.add("error");
+          status.textContent = body.error || "The reading failed.";
+          return;
+        }
+        show(body);
+        status.textContent = "Live reading for " + body.symbol + " at " + body.sampledAt + ".";
+      } catch (error) {
+        status.classList.add("error");
+        status.textContent = "The reading failed before a sample came back.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

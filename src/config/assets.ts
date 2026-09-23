@@ -3,13 +3,12 @@ import type { TrackedAsset } from "../types.js";
 /**
  * Tokenized equities tracked by Meridian, as deployed on X Layer (chainIndex 196).
  *
- * Addresses were read from `onchainos token search --chains 196` on 2026-09-23.
- * They are still pending confirmation against the issuer's own asset registry
- * (`GET /api/v2/public/assets/{symbol}`) — see the open questions in the spec.
- * Do not treat them as issuer-verified until that check is wired up.
+ * Addresses are issuer-confirmed. The xStocks deployments list records the same
+ * contract on every EVM chain, including X Layer.
  *
  * Each equity exists both bare and wrapped. The wrapped variant is the one paired
- * into the deep USDG pool, so it is what we quote against.
+ * into the deep pools, so it is what we quote against. One bare token represents
+ * one underlying share; the wrapper accrues dividends and is not 1:1.
  */
 export const TRACKED_ASSETS: TrackedAsset[] = [
   {
@@ -65,6 +64,9 @@ export const CONTROL_TOKENS = [
  * ladder is to show where the depth actually runs out.
  */
 export const QUOTE_SIZE_LADDER = [1, 10, 50, 200, 500, 1000] as const;
+
+/** Symbols treated as stable when measuring how much headline liquidity is actually exitable. */
+export const STABLE_SYMBOLS = ["USDG", "USDC", "USDT"] as const;
 
 export function findAsset(symbol: string): TrackedAsset | undefined {
   return TRACKED_ASSETS.find((a) => a.symbol.toLowerCase() === symbol.toLowerCase());

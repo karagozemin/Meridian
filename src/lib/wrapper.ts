@@ -30,6 +30,8 @@ export interface WrapperRate {
   underlyingAddress: string | null;
   /** How many underlying tokens one wrapped token represents. */
   assetsPerShare: number | null;
+  /** Decimal string of the raw `convertToAssets(1e18)` integer. Null when unverified. */
+  assetsPerShareRaw: string | null;
   status: NormalizationStatus;
   /** Present when the rate could not be established. */
   error: string | null;
@@ -62,28 +64,39 @@ export async function readWrapperRate(
         ...base,
         underlyingAddress,
         assetsPerShare: null,
+        assetsPerShareRaw: null,
         status: "unverified",
         error: `wrapper wraps ${underlyingAddress}, expected ${expectedUnderlying.toLowerCase()}`,
       };
     }
 
-    const assetsPerShare = Number(decodeUint(convertHex)) / Number(ONE_E18);
-    if (!Number.isFinite(assetsPerShare) || assetsPerShare <= 0) {
+    const raw = decodeUint(convertHex);
+    const assetsPerShare = Number(raw) / Number(ONE_E18);
+    if (!Number.isFinite(assetsPerShare) || assetsPerShare <= 0 || raw <= 0n) {
       return {
         ...base,
         underlyingAddress,
         assetsPerShare: null,
+        assetsPerShareRaw: null,
         status: "unverified",
         error: "conversion rate was not a positive number",
       };
     }
 
-    return { ...base, underlyingAddress, assetsPerShare, status: "verified", error: null };
+    return {
+      ...base,
+      underlyingAddress,
+      assetsPerShare,
+      assetsPerShareRaw: raw.toString(),
+      status: "verified",
+      error: null,
+    };
   } catch (cause) {
     return {
       ...base,
       underlyingAddress: null,
       assetsPerShare: null,
+      assetsPerShareRaw: null,
       status: "unverified",
       error: cause instanceof Error ? cause.message : String(cause),
     };

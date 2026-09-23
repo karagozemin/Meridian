@@ -13,7 +13,10 @@
     "sample": "tsx src/cli/sample-once.ts",
     "sampler": "tsx src/cli/sampler.ts",
     "probe": "tsx src/cli/probe.ts",
-    "volume-study": "tsx src/cli/volume-study.ts"
+    "volume-study": "tsx src/cli/volume-study.ts",
+    "panel": "tsx src/server/panel-server.ts",
+    "attest": "tsx src/cli/attest.ts",
+    "test:contract": "forge test && tsx src/cli/check-attest.ts"
   },
   "dependencies": {
     "zod": "^3.23.8"

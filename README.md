@@ -86,6 +86,9 @@ npm run sample             # one full observation per tracked asset
 npm run sample -- NVDAx    # a single asset
 npm run sampler            # continuous collection, default 5 min interval
 npm run sampler -- --interval 60
+npm run panel              # pre-trade page at http://localhost:4173
+npm run attest -- NVDAx 10 # print one attestation record; does not broadcast
+npm run test:contract      # attestation contract and sourcesHash
 npm run typecheck
 ```
 
@@ -105,6 +108,12 @@ src/
     index-probe.ts      market price vs market index, with controls
     depth.ts            pool composition and stable-quoted share
     sample.ts           one complete observation
+    panel.ts            formats a sample for the pre-trade page
+    attest.ts           one sample → attestation record, or a refusal
+  contracts/
+    MeridianAttestation.sol
+  server/
+    panel-server.ts     single-page pre-trade check
   cli/
     probe.ts            live index comparison
     sample-once.ts      single observation, rendered and logged
