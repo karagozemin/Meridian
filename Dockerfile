@@ -6,9 +6,9 @@ RUN apt-get update \
 
 # Linux build of the CLI. No wallet session is baked into the image.
 # The installer clones onchainos-skills, so git has to be present.
-# -y -g skips the prompts that would hang a Docker build.
+# npx -y only skips npm's install prompt. The installer itself has no -y/-g.
 ENV GIT_TERMINAL_PROMPT=0
-RUN npx -y @okxweb3/onchainos-installer install -y -g \
+RUN npx -y @okxweb3/onchainos-installer install --stable \
   && bin="$(command -v onchainos || find /root /usr -name onchainos -type f 2>/dev/null | head -1)" \
   && test -n "$bin" \
   && ln -sf "$bin" /usr/local/bin/onchainos \
