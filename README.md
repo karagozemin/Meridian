@@ -77,7 +77,7 @@ npm install
 npm run panel
 ```
 
-Open [http://meridian-l2cp.onrender.com](http://meridian-l2cp.onrender.com).
+Open [http://meridian-l2cp.onrender.com](http://meridian-l2cp.onrender.com)
 
 The landing page states the two volume figures, then **Open the instrument**. Pick an asset and a size, then **Check this size**. Four views:
 
