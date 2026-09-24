@@ -606,20 +606,19 @@
     ul.warn { margin: 0; padding-left: 18px; color: var(--heat); font-size: 13px; }
 
     .chart-wrap { border: 1px solid var(--line); background: var(--raised); padding: 14px 14px 12px; margin-top: 12px; }
-    .chart-head { display: flex; justify-content: space-between; gap: 16px 24px; align-items: start; flex-wrap: wrap; margin-bottom: 8px; }
-    .chart-head p { margin: 0; color: var(--dim); font-size: 13px; max-width: 62ch; }
+    .chart-head { display: flex; justify-content: space-between; gap: 12px 28px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+    .chart-head p { margin: 0; color: var(--dim); font-size: 13px; }
+    #tape-scale { margin: 0 0 8px; color: var(--faint); font-size: 12px; }
     #tape-chart { width: 100%; height: auto; display: block; }
     #tape-chart text { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
-    #tape-chart .lane { fill: var(--sunk); }
-    #tape-chart .lane-name { fill: var(--ink); font-size: 12px; }
+    #tape-chart .lane-name { fill: var(--ink); font-size: 13px; }
+    #tape-chart .last-gap { font-size: 12px; }
     #tape-chart .tick, #tape-chart .axis { fill: var(--faint); font-size: 10px; }
-    #tape-chart .zero { stroke: var(--line-2); stroke-dasharray: 2 3; }
-    #tape-chart .grid { stroke: var(--line); }
-    #tape-chart .series { fill: none; stroke: rgba(236, 234, 228, 0.28); stroke-width: 1.15; }
-    #tape-chart .series.draw { animation: draw 0.6s ease forwards; }
-    @keyframes draw { to { stroke-dashoffset: 0; } }
+    #tape-chart .zero { stroke: #3a3f48; stroke-dasharray: 1.5 3; }
+    #tape-chart .rule { stroke: var(--line); }
     #tape-chart circle { cursor: pointer; }
-    #tape-chart circle.hot, #tape-chart circle:focus { stroke: var(--ink); stroke-width: 1.6; }
+    #tape-chart circle.hot, #tape-chart circle:focus { stroke: var(--ink); stroke-width: 1.5; }
+    #tape-chart.enter { animation: rise 0.45s ease both; }
     .period-market { color: var(--acid); fill: var(--acid); }
     .period-extended { color: var(--amber); fill: var(--amber); }
     .period-overnight { color: var(--night); fill: var(--night); }
@@ -1011,7 +1010,7 @@
           <p class="note" id="series-claim"></p>
           <div class="chart-wrap">
             <div class="chart-head">
-              <p>Each row is one asset. Height is the stored gap at the smallest quoted size. Color is the issuer period. A break is a missing reading, not a filled-in value.</p>
+              <p>Stored gap at the smallest size. Empty stretches were not measured.</p>
               <div class="legend">
                 <span class="period-market"><i></i>market</span>
                 <span class="period-extended"><i></i>extended</span>
@@ -1020,7 +1019,8 @@
                 <span class="period-unreported"><i></i>unreported</span>
               </div>
             </div>
-            <svg id="tape-chart" viewBox="0 0 760 392" role="img" aria-label="Three rows, one asset each. Vertical position is the stored gap. Dot color is the issuer period. Breaks are missing readings."></svg>
+            <p id="tape-scale"></p>
+            <svg id="tape-chart" viewBox="0 0 760 318" role="img" aria-label="Three rows, one asset each. Height is the stored gap. Dot color is the issuer period. Empty stretches were not measured."></svg>
             <div id="tape-readout" class="readout">Hover or focus a point to read that stored observation.</div>
           </div>
           <div class="scroller" style="margin-top:16px">
@@ -1685,7 +1685,11 @@
         }
       }
       readout.textContent = points.length ? "Hover or focus a point to read that stored observation." : bodyCountMessage();
-      if (!points.length) return;
+      const scaleNote = document.getElementById("tape-scale");
+      if (!points.length) {
+        if (scaleNote) scaleNote.textContent = "";
+        return;
+      }
       const times = points.map((point) => point.t);
       const gaps = points.map((point) => point.g);
       const t0 = Math.min(...times);
@@ -1693,21 +1697,29 @@
       const g0 = Math.min(...gaps);
       const g1 = Math.max(...gaps);
       const spanT = t1 - t0 || 1;
-      const pad = (g1 - g0) * 0.16 || 0.08;
+      const pad = (g1 - g0) * 0.18 || 0.08;
       const yMin = g0 - pad;
       const yMax = g1 + pad;
       const spanG = yMax - yMin || 1;
-      const left = 112;
-      const right = 748;
-      const laneH = 104;
-      const laneGap = 12;
+      const left = 4;
+      const right = 756;
+      const rowH = 92;
+      const plotH = 58;
       const xOf = (time) => left + ((time - t0) / spanT) * (right - left);
-      const yOf = (gap, top) => top + 14 + (1 - (gap - yMin) / spanG) * (laneH - 28);
+      const yOf = (gap, plotTop) => plotTop + (1 - (gap - yMin) / spanG) * plotH;
+      const scale = document.getElementById("tape-scale");
+      scale.textContent = "Same scale on each row, " + gapLabel(g1) + " at the top to " + gapLabel(g0) + " at the bottom. The dashed line is zero.";
+      if (animate && !reduceMotion()) {
+        svg.classList.remove("enter");
+        void svg.offsetWidth;
+        svg.classList.add("enter");
+      }
       const describe = (point) => point.symbol + ", " + formatUtc(point.t) + ", period " + point.issuerPeriod + ", gap " + point.gap + ", size " + point.sizeTokens;
       symbols.forEach((symbol, index) => {
-        const top = 8 + index * (laneH + laneGap);
-        svg.appendChild(svgEl("rect", { class: "lane", x: left, y: top, width: right - left, height: laneH }));
-        const name = svgEl("text", { class: "lane-name", x: 8, y: top + 18 });
+        const top = index * rowH;
+        const plotTop = top + 22;
+        svg.appendChild(svgEl("line", { class: "rule", x1: left, x2: right, y1: top + rowH - 6, y2: top + rowH - 6 }));
+        const name = svgEl("text", { class: "lane-name", x: left, y: top + 14 });
         name.textContent = symbol;
         svg.appendChild(name);
         const ordered = (grouped.get(symbol) || []).slice().sort((a, b) => a.t - b.t);
@@ -1716,54 +1728,19 @@
           return gap === null ? [] : [{ ...row, g: gap }];
         });
         const last = numeric[numeric.length - 1];
-        const lastLabel = svgEl("text", { class: "tick", x: 8, y: top + 34 });
-        lastLabel.textContent = last ? "last " + last.gap : "no gap";
+        const lastLabel = svgEl("text", { class: "last-gap", x: right, y: top + 14, "text-anchor": "end" });
+        lastLabel.textContent = last ? "last " + last.gap : "no gap stored";
+        lastLabel.setAttribute("fill", !last ? "#8b8f98" : last.g < 0 ? "#ff7a45" : last.g > 0 ? "#ccff33" : "#eceae4");
         svg.appendChild(lastLabel);
-        if (index === 0) {
-          const high = svgEl("text", { class: "tick", x: 8, y: top + 52 });
-          high.textContent = gapLabel(g1);
-          const low = svgEl("text", { class: "tick", x: 8, y: top + laneH - 8 });
-          low.textContent = gapLabel(g0);
-          svg.append(high, low);
-        }
         if (yMin < 0 && yMax > 0) {
-          const y = yOf(0, top);
+          const y = yOf(0, plotTop);
           svg.appendChild(svgEl("line", { class: "zero", x1: left, x2: right, y1: y, y2: y }));
-          if (index === 0) {
-            const zero = svgEl("text", { class: "tick", x: left + 6, y: y - 4 });
-            zero.textContent = "0";
-            svg.appendChild(zero);
-          }
         }
-        let segment = [];
-        const flush = () => {
-          if (segment.length < 2) { segment = []; return; }
-          const path = svgEl("path", {
-            class: "series",
-            d: segment.map((point, step) => (step ? "L" : "M") + xOf(point.t).toFixed(1) + " " + yOf(point.g, top).toFixed(1)).join(" "),
-          });
-          svg.appendChild(path);
-          if (animate) {
-            const length = path.getTotalLength();
-            path.style.strokeDasharray = String(length);
-            path.style.strokeDashoffset = String(length);
-            path.classList.add("draw");
-          }
-          segment = [];
-        };
-        for (const row of ordered) {
-          const gap = parseNum(row.gap);
-          const prev = segment[segment.length - 1];
-          if (gap === null || (prev && row.t - prev.t > GAP_MS)) flush();
-          if (gap === null) continue;
-          segment.push({ ...row, g: gap });
-        }
-        flush();
         for (const point of numeric) {
           const dot = svgEl("circle", {
             cx: xOf(point.t).toFixed(1),
-            cy: yOf(point.g, top).toFixed(1),
-            r: 3.6,
+            cy: yOf(point.g, plotTop).toFixed(1),
+            r: 3.2,
             class: periodClass(point.issuerPeriod),
             tabindex: 0,
             role: "img",
@@ -1774,7 +1751,7 @@
           svg.appendChild(dot);
         }
       });
-      const axisY = 8 + symbols.length * laneH + (symbols.length - 1) * laneGap + 16;
+      const axisY = symbols.length * rowH + 14;
       for (let step = 0; step < 4; step += 1) {
         const time = t0 + (spanT * step) / 3;
         const x = xOf(time);
