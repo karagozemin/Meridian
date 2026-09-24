@@ -13,6 +13,9 @@ import type { Sample } from "../types.js";
 
 export const DEFAULT_SAMPLE_PATH = resolve(process.cwd(), "data", "samples.jsonl");
 
+/** Frozen copy of the series shipped with the public deploy. The live log wins when it has rows. */
+export const SNAPSHOT_SAMPLE_PATH = resolve(process.cwd(), "data", "snapshot.jsonl");
+
 export async function appendSamples(
   samples: readonly Sample[],
   path: string = DEFAULT_SAMPLE_PATH,
@@ -23,8 +26,7 @@ export async function appendSamples(
   await appendFile(path, `${lines}\n`, "utf8");
 }
 
-/** Reads the log back, skipping any line a crash left truncated. */
-export async function readSamples(path: string = DEFAULT_SAMPLE_PATH): Promise<Sample[]> {
+async function readSampleFile(path: string): Promise<Sample[]> {
   let contents: string;
   try {
     contents = await readFile(path, "utf8");
@@ -43,4 +45,11 @@ export async function readSamples(path: string = DEFAULT_SAMPLE_PATH): Promise<S
     }
   }
   return samples;
+}
+
+/** Reads the log back. An empty live log falls through to the shipped snapshot. */
+export async function readSamples(path: string = DEFAULT_SAMPLE_PATH): Promise<Sample[]> {
+  const live = await readSampleFile(path);
+  if (live.length > 0 || path !== DEFAULT_SAMPLE_PATH) return live;
+  return readSampleFile(SNAPSHOT_SAMPLE_PATH);
 }

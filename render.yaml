@@ -4,7 +4,10 @@ services:
     runtime: docker
     plan: starter
     healthCheckPath: /
+    envVars:
+      - key: ONCHAINOS_BUNDLE
+        sync: false
     disk:
-      name: onchainos
-      mountPath: /root/.onchainos
+      name: meridian-data
+      mountPath: /data
       sizeGB: 1

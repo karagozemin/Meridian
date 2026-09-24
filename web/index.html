@@ -605,23 +605,34 @@
     }
     ul.warn { margin: 0; padding-left: 18px; color: var(--heat); font-size: 13px; }
 
-    .chart-wrap { border: 1px solid var(--line); background: var(--raised); padding: 12px; margin-top: 12px; }
+    .chart-wrap { border: 1px solid var(--line); background: var(--raised); padding: 14px 14px 12px; margin-top: 12px; }
+    .chart-head { display: flex; justify-content: space-between; gap: 16px 24px; align-items: start; flex-wrap: wrap; margin-bottom: 8px; }
+    .chart-head p { margin: 0; color: var(--dim); font-size: 13px; max-width: 62ch; }
     #tape-chart { width: 100%; height: auto; display: block; }
-    #tape-chart .series { fill: none; stroke: #b7bcc4; stroke-width: 1.4; }
+    #tape-chart text { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+    #tape-chart .lane { fill: var(--sunk); }
+    #tape-chart .lane-name { fill: var(--ink); font-size: 12px; }
+    #tape-chart .tick, #tape-chart .axis { fill: var(--faint); font-size: 10px; }
+    #tape-chart .zero { stroke: var(--line-2); stroke-dasharray: 2 3; }
+    #tape-chart .grid { stroke: var(--line); }
+    #tape-chart .series { fill: none; stroke: rgba(236, 234, 228, 0.28); stroke-width: 1.15; }
     #tape-chart .series.draw { animation: draw 0.6s ease forwards; }
     @keyframes draw { to { stroke-dashoffset: 0; } }
     #tape-chart circle { cursor: pointer; }
-    #tape-chart circle:focus { stroke: var(--ink); stroke-width: 2; }
+    #tape-chart circle.hot, #tape-chart circle:focus { stroke: var(--ink); stroke-width: 1.6; }
     .period-market { color: var(--acid); fill: var(--acid); }
     .period-extended { color: var(--amber); fill: var(--amber); }
     .period-overnight { color: var(--night); fill: var(--night); }
     .period-closed { color: var(--faint); fill: var(--faint); }
     .period-unreported { color: var(--dim); fill: transparent; stroke: var(--dim); }
-    .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0; }
     .legend span { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
-    .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border: 1px solid currentColor; background: currentColor; }
+    .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border: 1px solid currentColor; background: currentColor; vertical-align: -1px; }
     .period-unreported i { background: transparent; }
-    .readout { min-height: 2.6em; margin: 8px 0 0; color: var(--dim); font-size: 12.5px; }
+    .readout { min-height: 3.2em; margin: 10px 0 0; color: var(--dim); font-size: 12.5px; }
+    .readout-grid { display: grid; grid-template-columns: repeat(5, minmax(0, max-content)); gap: 4px 22px; }
+    .readout-grid span { display: block; color: var(--faint); font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .readout-grid strong { font-weight: 500; color: var(--ink); font-family: "IBM Plex Mono", monospace; font-size: 13px; }
     .gap-list { margin: 8px 0 0; padding-left: 18px; color: var(--dim); font-size: 12.5px; max-height: 160px; overflow: auto; }
     .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
     .facts span { border: 1px solid var(--line); background: var(--sunk); padding: 6px 8px; font-family: "IBM Plex Mono", monospace; font-size: 12px; }
@@ -663,7 +674,7 @@
     }
     @media (max-width: 680px) {
       .wrap { width: calc(100% - 28px); }
-      .stats, .verdict, .cards, .duo, .console, .pipeline-nodes, .trace li, .record-field { grid-template-columns: 1fr; }
+      .stats, .verdict, .cards, .duo, .console, .pipeline-nodes, .trace li, .record-field, .readout-grid { grid-template-columns: 1fr 1fr; }
       .stat + .stat, .verdict > div + div, .console fieldset + fieldset { border-left: 0; border-top: 1px solid var(--line); }
       .meta { grid-template-columns: 1fr; }
       .meta dd { margin-bottom: 8px; }
@@ -998,16 +1009,19 @@
           <ul class="gap-list hidden" id="series-gaps"></ul>
           <p class="note" id="series-regimes"></p>
           <p class="note" id="series-claim"></p>
-          <div class="legend" aria-hidden="true">
-            <span class="period-market"><i></i>market</span>
-            <span class="period-extended"><i></i>extended</span>
-            <span class="period-overnight"><i></i>overnight</span>
-            <span class="period-closed"><i></i>closed</span>
-            <span class="period-unreported"><i></i>unreported</span>
-          </div>
           <div class="chart-wrap">
-            <svg id="tape-chart" viewBox="0 0 720 220" role="img" aria-label="Recorded gaps. Missing readings are not drawn."></svg>
-            <p id="tape-readout" class="readout">Select a stored point to read its source values.</p>
+            <div class="chart-head">
+              <p>Each row is one asset. Height is the stored gap at the smallest quoted size. Color is the issuer period. A break is a missing reading, not a filled-in value.</p>
+              <div class="legend">
+                <span class="period-market"><i></i>market</span>
+                <span class="period-extended"><i></i>extended</span>
+                <span class="period-overnight"><i></i>overnight</span>
+                <span class="period-closed"><i></i>closed</span>
+                <span class="period-unreported"><i></i>unreported</span>
+              </div>
+            </div>
+            <svg id="tape-chart" viewBox="0 0 760 392" role="img" aria-label="Three rows, one asset each. Vertical position is the stored gap. Dot color is the issuer period. Breaks are missing readings."></svg>
+            <div id="tape-readout" class="readout">Hover or focus a point to read that stored observation.</div>
           </div>
           <div class="scroller" style="margin-top:16px">
             <table>
@@ -1613,10 +1627,55 @@
         seriesRows.appendChild(tr);
       }
     }
+    function svgEl(name, attrs) {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+      for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+      return node;
+    }
+    function formatUtc(ms) {
+      const date = new Date(ms);
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const hh = String(date.getUTCHours()).padStart(2, "0");
+      const mm = String(date.getUTCMinutes()).padStart(2, "0");
+      return date.getUTCDate() + " " + months[date.getUTCMonth()] + " " + hh + ":" + mm + " UTC";
+    }
+    function gapLabel(value) {
+      const text = value.toFixed(Math.abs(value) >= 10 ? 1 : 2);
+      return (value > 0 ? "+" : "") + text + "%";
+    }
+    function showReading(point, dot) {
+      const readout = document.getElementById("tape-readout");
+      const previous = document.querySelector("#tape-chart circle.hot");
+      if (previous) previous.classList.remove("hot");
+      if (dot) dot.classList.add("hot");
+      readout.replaceChildren();
+      const grid = document.createElement("div");
+      grid.className = "readout-grid";
+      const period = point.issuerPeriod && point.issuerPeriod !== "—" ? point.issuerPeriod : "unreported";
+      const fields = [
+        ["Asset", point.symbol, ""],
+        ["Taken", formatUtc(point.t), ""],
+        ["Issuer period", period, periodClass(period)],
+        ["Gap, pricing only", point.gap, gapTone(point.gap)],
+        ["Size", point.sizeTokens + " tokens", ""],
+      ];
+      for (const [label, value, tone] of fields) {
+        const cell = document.createElement("div");
+        const span = document.createElement("span");
+        span.textContent = label;
+        const strong = document.createElement("strong");
+        strong.textContent = value;
+        if (tone) strong.className = tone;
+        cell.append(span, strong);
+        grid.appendChild(cell);
+      }
+      readout.appendChild(grid);
+    }
     function drawChart(grouped, animate) {
       const svg = document.getElementById("tape-chart");
       const readout = document.getElementById("tape-readout");
       svg.replaceChildren();
+      const symbols = ["NVDAx", "TSLAx", "AAPLx"];
       const points = [];
       for (const list of grouped.values()) {
         for (const row of list) {
@@ -1625,10 +1684,8 @@
           points.push({ ...row, g: gap });
         }
       }
-      if (!points.length) {
-        readout.textContent = bodyCountMessage();
-        return;
-      }
+      readout.textContent = points.length ? "Hover or focus a point to read that stored observation." : bodyCountMessage();
+      if (!points.length) return;
       const times = points.map((point) => point.t);
       const gaps = points.map((point) => point.g);
       const t0 = Math.min(...times);
@@ -1636,21 +1693,55 @@
       const g0 = Math.min(...gaps);
       const g1 = Math.max(...gaps);
       const spanT = t1 - t0 || 1;
-      const spanG = g1 - g0 || 1;
-      const x = (time) => 36 + ((time - t0) / spanT) * 660;
-      const y = (gap) => 24 + (1 - (gap - g0) / spanG) * 160;
-      const describe = (point) => point.symbol + " · " + point.sampledAt + " · period " + point.issuerPeriod + " · gap " + point.gap + " · size " + point.sizeTokens;
-      const showPoint = (point) => { readout.textContent = describe(point); };
-      for (const [symbol, list] of grouped) {
-        const ordered = list.slice().sort((a, b) => a.t - b.t);
+      const pad = (g1 - g0) * 0.16 || 0.08;
+      const yMin = g0 - pad;
+      const yMax = g1 + pad;
+      const spanG = yMax - yMin || 1;
+      const left = 112;
+      const right = 748;
+      const laneH = 104;
+      const laneGap = 12;
+      const xOf = (time) => left + ((time - t0) / spanT) * (right - left);
+      const yOf = (gap, top) => top + 14 + (1 - (gap - yMin) / spanG) * (laneH - 28);
+      const describe = (point) => point.symbol + ", " + formatUtc(point.t) + ", period " + point.issuerPeriod + ", gap " + point.gap + ", size " + point.sizeTokens;
+      symbols.forEach((symbol, index) => {
+        const top = 8 + index * (laneH + laneGap);
+        svg.appendChild(svgEl("rect", { class: "lane", x: left, y: top, width: right - left, height: laneH }));
+        const name = svgEl("text", { class: "lane-name", x: 8, y: top + 18 });
+        name.textContent = symbol;
+        svg.appendChild(name);
+        const ordered = (grouped.get(symbol) || []).slice().sort((a, b) => a.t - b.t);
+        const numeric = ordered.flatMap((row) => {
+          const gap = parseNum(row.gap);
+          return gap === null ? [] : [{ ...row, g: gap }];
+        });
+        const last = numeric[numeric.length - 1];
+        const lastLabel = svgEl("text", { class: "tick", x: 8, y: top + 34 });
+        lastLabel.textContent = last ? "last " + last.gap : "no gap";
+        svg.appendChild(lastLabel);
+        if (index === 0) {
+          const high = svgEl("text", { class: "tick", x: 8, y: top + 52 });
+          high.textContent = gapLabel(g1);
+          const low = svgEl("text", { class: "tick", x: 8, y: top + laneH - 8 });
+          low.textContent = gapLabel(g0);
+          svg.append(high, low);
+        }
+        if (yMin < 0 && yMax > 0) {
+          const y = yOf(0, top);
+          svg.appendChild(svgEl("line", { class: "zero", x1: left, x2: right, y1: y, y2: y }));
+          if (index === 0) {
+            const zero = svgEl("text", { class: "tick", x: left + 6, y: y - 4 });
+            zero.textContent = "0";
+            svg.appendChild(zero);
+          }
+        }
         let segment = [];
         const flush = () => {
           if (segment.length < 2) { segment = []; return; }
-          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-          path.setAttribute("class", "series" + (symbol === "TSLAx" ? " tsla" : symbol === "AAPLx" ? " aapl" : ""));
-          path.setAttribute("d", segment.map((point, index) => (index ? "L" : "M") + x(point.t).toFixed(1) + " " + y(point.g).toFixed(1)).join(" "));
-          if (symbol === "TSLAx") path.setAttribute("stroke-dasharray", "4 3");
-          if (symbol === "AAPLx") path.setAttribute("stroke-dasharray", "1 3");
+          const path = svgEl("path", {
+            class: "series",
+            d: segment.map((point, step) => (step ? "L" : "M") + xOf(point.t).toFixed(1) + " " + yOf(point.g, top).toFixed(1)).join(" "),
+          });
           svg.appendChild(path);
           if (animate) {
             const length = path.getTotalLength();
@@ -1668,24 +1759,29 @@
           segment.push({ ...row, g: gap });
         }
         flush();
-        for (const row of ordered) {
-          const gap = parseNum(row.gap);
-          if (gap === null) continue;
-          const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-          dot.setAttribute("cx", x(row.t).toFixed(1));
-          dot.setAttribute("cy", y(gap).toFixed(1));
-          dot.setAttribute("r", "3.5");
-          dot.setAttribute("class", periodClass(row.issuerPeriod));
-          dot.setAttribute("tabindex", "0");
-          dot.setAttribute("role", "img");
-          dot.setAttribute("aria-label", describe(row));
-          const point = { ...row, g: gap };
-          dot.addEventListener("pointerenter", () => showPoint(point));
-          dot.addEventListener("focus", () => showPoint(point));
+        for (const point of numeric) {
+          const dot = svgEl("circle", {
+            cx: xOf(point.t).toFixed(1),
+            cy: yOf(point.g, top).toFixed(1),
+            r: 3.6,
+            class: periodClass(point.issuerPeriod),
+            tabindex: 0,
+            role: "img",
+            "aria-label": describe(point),
+          });
+          dot.addEventListener("pointerenter", () => showReading(point, dot));
+          dot.addEventListener("focus", () => showReading(point, dot));
           svg.appendChild(dot);
         }
+      });
+      const axisY = 8 + symbols.length * laneH + (symbols.length - 1) * laneGap + 16;
+      for (let step = 0; step < 4; step += 1) {
+        const time = t0 + (spanT * step) / 3;
+        const x = xOf(time);
+        const label = svgEl("text", { class: "axis", x, y: axisY, "text-anchor": step === 0 ? "start" : step === 3 ? "end" : "middle" });
+        label.textContent = formatUtc(time).replace(" UTC", "");
+        svg.appendChild(label);
       }
-      readout.textContent = "Select a stored point to read its source values.";
     }
     function bodyCountMessage() {
       return seriesBody && seriesBody.count
