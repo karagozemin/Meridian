@@ -25,13 +25,17 @@
     html { -webkit-text-size-adjust: 100%; }
     html, body { margin: 0; padding: 0; }
     body {
-      background: var(--bg);
+      background:
+        radial-gradient(900px 420px at 12% -8%, rgba(204, 255, 51, 0.07), transparent 55%),
+        radial-gradient(700px 380px at 88% 0%, rgba(255, 122, 69, 0.05), transparent 50%),
+        var(--bg);
       color: var(--ink);
       font-family: Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
       font-size: 15px;
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
     }
+    body.entered { background: var(--bg); }
     button, input { font: inherit; color: inherit; }
     .hidden { display: none !important; }
 
@@ -430,6 +434,91 @@
       max-width: 90ch;
     }
 
+    .app-main { padding-bottom: 96px; }
+
+    .tape-bar {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, auto));
+      gap: 8px 20px;
+      align-items: baseline;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border: 1px solid var(--line);
+      background: var(--raised);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    .tape-bar .pill {
+      padding: 4px 10px;
+      border: 1px solid var(--line-2);
+      background: var(--sunk);
+      white-space: nowrap;
+    }
+    .tape-bar .pill.live { border-color: rgba(204, 255, 51, 0.35); color: var(--acid); }
+    .tape-bar .pill.down { color: var(--heat); }
+    .tape-bar .pill.up { color: var(--acid); }
+
+    .app-nav {
+      display: flex;
+      gap: 6px;
+      margin: 16px 0 0;
+      padding: 4px;
+      border: 1px solid var(--line);
+      background: var(--sunk);
+      width: fit-content;
+      max-width: 100%;
+      flex-wrap: wrap;
+    }
+    .app-nav button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--dim);
+      padding: 10px 16px;
+      cursor: pointer;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .app-nav button:hover { color: var(--ink); }
+    .app-nav button.active {
+      background: var(--raised);
+      color: var(--ink);
+      box-shadow: inset 0 -2px 0 var(--acid);
+    }
+
+    .tab-panel { display: none; margin-top: 22px; animation: reveal 0.28s ease both; }
+    .tab-panel.active { display: block; }
+
+    .empty-state {
+      margin-top: 28px;
+      padding: 48px 28px;
+      border: 1px dashed var(--line-2);
+      background: rgba(14, 16, 19, 0.6);
+      text-align: center;
+    }
+    .empty-state p { margin: 10px 0 0; color: var(--dim); max-width: 42ch; margin-inline: auto; }
+    .empty-state.compact { padding: 32px 20px; margin-top: 0; }
+
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    #prepare.primary {
+      background: var(--ink);
+      color: var(--bg);
+      border-color: var(--ink);
+    }
+    #prepare.primary:hover:not(:disabled) { background: var(--acid); color: var(--bg); border-color: var(--acid); }
+
     /* Short viewports: the landing must not push its own button off screen. */
     @media (max-height: 780px) {
       #gate { padding: 16px 0 18px; }
@@ -551,8 +640,29 @@
       <p id="status">Nothing is on the tape until a live reading returns.</p>
     </div>
 
-    <main class="wrap">
-      <div id="results" class="hidden">
+    <main class="wrap app-main">
+      <div id="tape-bar" class="tape-bar hidden" aria-live="polite">
+        <span class="pill live" id="hud-live">Live</span>
+        <span class="pill" id="hud-symbol">—</span>
+        <span class="pill" id="hud-size">—</span>
+        <span class="pill" id="hud-effective">—</span>
+        <span class="pill" id="hud-gap">—</span>
+        <span class="pill" id="hud-regime">—</span>
+      </div>
+
+      <nav id="app-nav" class="app-nav" role="tablist" aria-label="Instrument views">
+        <button type="button" role="tab" id="tab-reading" data-tab="reading" class="active" aria-selected="true">Reading</button>
+        <button type="button" role="tab" id="tab-depth" data-tab="depth" aria-selected="false">Depth</button>
+        <button type="button" role="tab" id="tab-tape" data-tab="tape" aria-selected="false">Tape</button>
+        <button type="button" role="tab" id="tab-chain" data-tab="chain" aria-selected="false">Chain</button>
+      </nav>
+
+      <div id="panel-reading" class="tab-panel active" role="tabpanel">
+        <div id="empty-state" class="empty-state">
+          <p class="tag">No reading yet</p>
+          <p>Choose an asset and size in the console, then run <strong>Check this size</strong>. The verdict appears here.</p>
+        </div>
+        <div id="results" class="hidden">
         <section>
           <h2>This size against the issuer reference</h2>
           <p class="note reason hidden" id="withheld"></p>
@@ -583,6 +693,47 @@
           </div>
         </section>
 
+        <div class="action-bar">
+          <button type="button" id="prepare" class="hidden primary">Prepare this trade</button>
+          <p class="note" style="margin:0">Fresh quote only. Nothing is signed on this page.</p>
+        </div>
+        <div id="confirm" class="hidden" style="margin-top:22px;border-left:2px solid var(--acid);padding-left:22px">
+            <p class="note" id="confirm-state" style="margin-top:0"></p>
+            <div class="cards" style="margin-top:14px">
+              <div>
+                <div class="tag">Effective · USD per underlying share</div>
+                <div class="figure sm" id="prep-effective"></div>
+                <p class="reason hidden" id="prep-effective-reason"></p>
+              </div>
+              <div>
+                <div class="tag">Minimum received</div>
+                <div class="figure sm" id="prep-min"></div>
+                <p class="reason hidden" id="prep-min-reason"></p>
+                <p class="note" id="prep-units"></p>
+              </div>
+              <div>
+                <div class="tag">Gap at this size</div>
+                <div class="figure sm" id="prep-gap"></div>
+                <p class="reason hidden" id="prep-gap-reason"></p>
+                <div class="sub">
+                  <div class="tag">Deadline</div>
+                  <div class="figure xs mono" id="prep-deadline"></div>
+                </div>
+              </div>
+            </div>
+            <dl class="meta" id="prep-move" style="margin-top:18px"></dl>
+            <p class="note" id="prep-notice"></p>
+            <p class="note" id="prep-protection"></p>
+        </div>
+        </div>
+      </div>
+
+      <div id="panel-depth" class="tab-panel" role="tabpanel">
+        <div id="depth-empty" class="empty-state compact">
+          <p class="tag">Depth locked</p>
+          <p>Run a reading on the Reading tab first. Ladder, pools, and index data load from that sample.</p>
+        </div>
+        <div id="depth-body" class="hidden">
         <div class="duo">
           <section>
             <h2>Issuer session</h2>
@@ -592,6 +743,7 @@
           <section>
             <h2 id="parity-heading">Quote-token parity</h2>
             <dl class="meta" id="parity"></dl>
+            <p class="reason hidden" id="parity-extra"></p>
           </section>
         </div>
 
@@ -656,44 +808,13 @@
         </section>
 
         <section>
-          <h2>Prepare</h2>
-          <button type="button" id="prepare" class="hidden">Prepare this trade</button>
-          <div id="confirm" class="hidden" style="margin-top:26px">
-            <p class="note" id="confirm-state" style="margin-top:0"></p>
-            <div class="cards" style="margin-top:14px">
-              <div>
-                <div class="tag">Effective · USD per underlying share</div>
-                <div class="figure sm" id="prep-effective"></div>
-                <p class="reason hidden" id="prep-effective-reason"></p>
-              </div>
-              <div>
-                <div class="tag">Minimum received</div>
-                <div class="figure sm" id="prep-min"></div>
-                <p class="reason hidden" id="prep-min-reason"></p>
-                <p class="note" id="prep-units"></p>
-              </div>
-              <div>
-                <div class="tag">Gap at this size</div>
-                <div class="figure sm" id="prep-gap"></div>
-                <p class="reason hidden" id="prep-gap-reason"></p>
-                <div class="sub">
-                  <div class="tag">Deadline</div>
-                  <div class="figure xs mono" id="prep-deadline"></div>
-                </div>
-              </div>
-            </div>
-            <dl class="meta" id="prep-move" style="margin-top:18px"></dl>
-            <p class="note" id="prep-notice"></p>
-            <p class="note" id="prep-protection"></p>
-          </div>
-        </section>
-
-        <section>
           <h2>Provenance</h2>
           <dl class="meta" id="provenance"></dl>
         </section>
+        </div>
       </div>
 
+      <div id="panel-tape" class="tab-panel" role="tabpanel">
       <section id="series-section">
         <h2>Recorded series</h2>
         <p class="note" id="series-window" style="margin-top:0">Loading the recorded readings.</p>
@@ -706,13 +827,16 @@
           </table>
         </div>
       </section>
+      </div>
 
+      <div id="panel-chain" class="tab-panel" role="tabpanel">
       <section id="record-section">
         <h2>On-chain record</h2>
         <p class="note" id="record-claim" style="margin-top:0">Loading the record from X Layer.</p>
         <p class="reason hidden" id="record-reason"></p>
         <dl class="meta" id="record-meta" style="margin-top:16px"></dl>
       </section>
+      </div>
 
       <footer>
         Meridian shows measured prices and the source each one came from. It does not compute a fair value. A difference from the issuer reference is a measurement, not protection. This page does not submit a trade. The only on-chain protections on a trade are the minimum amount received and the deadline, and both are parameters of the router call, not of this screen.
@@ -755,6 +879,26 @@
       window.scrollTo(0, 0);
     });
     if (location.hash === "#instrument") document.body.classList.add("entered");
+
+    function setTab(name) {
+      for (const button of document.querySelectorAll(".app-nav button")) {
+        const on = button.dataset.tab === name;
+        button.classList.toggle("active", on);
+        button.setAttribute("aria-selected", on ? "true" : "false");
+      }
+      for (const panel of document.querySelectorAll(".tab-panel")) {
+        const on =
+          (panel.id === "panel-reading" && name === "reading") ||
+          (panel.id === "panel-depth" && name === "depth") ||
+          (panel.id === "panel-tape" && name === "tape") ||
+          (panel.id === "panel-chain" && name === "chain");
+        panel.classList.toggle("active", on);
+      }
+    }
+
+    for (const button of document.querySelectorAll(".app-nav button")) {
+      button.addEventListener("click", () => setTab(button.dataset.tab ?? "reading"));
+    }
 
     function field(id, value) {
       const node = document.getElementById(id);
@@ -808,7 +952,26 @@
     }
 
     function show(view) {
+      document.getElementById("empty-state").classList.add("hidden");
+      document.getElementById("depth-empty").classList.add("hidden");
+      document.getElementById("depth-body").classList.remove("hidden");
       results.classList.remove("hidden");
+      setTab("reading");
+
+      const size = String(new FormData(form).get("size") ?? "");
+      const bar = document.getElementById("tape-bar");
+      bar.classList.remove("hidden");
+      document.getElementById("hud-symbol").textContent = view.symbol;
+      document.getElementById("hud-size").textContent = size + " wrapped";
+      document.getElementById("hud-effective").textContent = "Eff " + view.effectiveUsd.text;
+      const gapHud = document.getElementById("hud-gap");
+      gapHud.textContent = "Gap " + view.gapAtRequestedSize.text;
+      gapHud.className = "pill";
+      const gapText = view.gapAtRequestedSize.text;
+      if (gapText.startsWith("-") || gapText.startsWith("−")) gapHud.classList.add("down");
+      else if (gapText.startsWith("+")) gapHud.classList.add("up");
+      document.getElementById("hud-regime").textContent = view.issuerPeriod.text;
+
       const withheld = document.getElementById("withheld");
       const comparison = document.getElementById("comparison");
       if (view.comparisonHidden) {
@@ -862,12 +1025,13 @@
         ["off parity", view.quoteTokenDeviation.text],
         ["read at", view.quoteTokenFetchedAt],
       ]);
-      const parityReason = view.quoteTokenParity.reason;
-      if (parityReason) {
-        const note = document.createElement("p");
-        note.className = "reason";
-        note.textContent = parityReason;
-        document.getElementById("parity").append(note);
+      const parityExtra = document.getElementById("parity-extra");
+      if (view.quoteTokenParity.reason) {
+        parityExtra.textContent = view.quoteTokenParity.reason;
+        parityExtra.classList.remove("hidden");
+      } else {
+        parityExtra.textContent = "";
+        parityExtra.classList.add("hidden");
       }
 
       document.getElementById("route").textContent = view.requestedRoute;
@@ -918,9 +1082,11 @@
       prepare.classList.toggle("hidden", view.comparisonHidden);
       document.getElementById("confirm").classList.add("hidden");
       reveal(document.getElementById("comparison"));
+      document.getElementById("comparison").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function showPreparation(view) {
+      setTab("reading");
       const confirm = document.getElementById("confirm");
       confirm.classList.remove("hidden");
       document.getElementById("confirm-state").textContent =
@@ -1035,6 +1201,12 @@
       const symbol = String(data.get("symbol") ?? "");
       const size = String(data.get("size") ?? "");
       results.classList.add("hidden");
+      document.getElementById("empty-state").classList.remove("hidden");
+      document.getElementById("depth-body").classList.add("hidden");
+      document.getElementById("depth-empty").classList.remove("hidden");
+      document.getElementById("tape-bar").classList.add("hidden");
+      document.getElementById("confirm").classList.add("hidden");
+      setTab("reading");
       setStatus("Reading the router, the issuer, and X Layer.", "busy");
       button.disabled = true;
       try {
