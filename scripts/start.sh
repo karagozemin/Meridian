@@ -2,6 +2,11 @@
 # Panel, sampler, and the onchainos session. The session is not in the image.
 set -eu
 
+export PATH="/usr/local/bin:/root/.local/bin:${PATH}"
+if ! command -v onchainos >/dev/null 2>&1; then
+  echo "onchainos is not on PATH. USDG/USD, quotes, and the index will be withheld." >&2
+fi
+
 mkdir -p /data/onchainos /data/series /app/data
 
 if [ -n "${ONCHAINOS_BUNDLE:-}" ] && [ ! -f /data/onchainos/session.json ]; then

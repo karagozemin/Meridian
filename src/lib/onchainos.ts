@@ -1,7 +1,18 @@
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
+
+/** Prefer an absolute binary so a stripped PATH on the host still finds the CLI. */
+function onchainosBin(): string {
+  const fromEnv = process.env.ONCHAINOS_BIN;
+  if (fromEnv && existsSync(fromEnv)) return fromEnv;
+  for (const candidate of ["/usr/local/bin/onchainos", "/root/.local/bin/onchainos"]) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return "onchainos";
+}
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -34,7 +45,7 @@ interface Envelope<T> {
 export async function run<T>(args: string[], timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
   let stdout: string;
   try {
-    const result = await execFileAsync("onchainos", args, {
+    const result = await execFileAsync(onchainosBin(), args, {
       timeout: timeoutMs,
       maxBuffer: 32 * 1024 * 1024,
     });
@@ -87,6 +98,6 @@ export async function tryRun<T>(
 }
 
 export async function version(): Promise<string> {
-  const { stdout } = await execFileAsync("onchainos", ["--version"], { timeout: 10_000 });
+  const { stdout } = await execFileAsync(onchainosBin(), ["--version"], { timeout: 10_000 });
   return stdout.trim();
 }

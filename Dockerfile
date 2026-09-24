@@ -5,8 +5,13 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # Linux build of the CLI. No wallet session is baked into the image.
-RUN curl -fsSL https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}"
+# The old install.sh URL is gone; the installer publishes the binary.
+RUN npx -y @okxweb3/onchainos-installer install \
+  && bin="$(command -v onchainos || find /root /usr/local -name onchainos -type f 2>/dev/null | head -1)" \
+  && test -n "$bin" \
+  && ln -sf "$bin" /usr/local/bin/onchainos \
+  && onchainos --version
+ENV PATH="/usr/local/bin:/root/.local/bin:${PATH}"
 
 WORKDIR /app
 
