@@ -77,7 +77,7 @@ npm install
 npm run panel
 ```
 
-Open [http://meridian-l2cp.onrender.com](http://meridian-l2cp.onrender.com)
+Open [https://meridian-l2cp.onrender.com](http://meridian-l2cp.onrender.com)
 
 The landing page states the two volume figures, then **Open the instrument**. Pick an asset and a size, then **Check this size**. Four views:
 
@@ -118,7 +118,7 @@ npm run sample -- NVDAx    # one asset
 npm run sampler            # five-minute schedule; coverage has gaps
 npm run sampler -- --interval 60
 npm run volume-study       # recompute the 68.8% / 24.5% split
-npm run panel              # http://meridian-l2cp.onrender.com
+npm run panel              # https://meridian-l2cp.onrender.com
 npm run attest -- NVDAx 10 # print one record; does not broadcast
 npm run test:contract      # Solidity tests and the sourcesHash fixture
 npm run typecheck
