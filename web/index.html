@@ -3,349 +3,766 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Meridian — pre-trade check</title>
+  <title>Meridian — the price a sell actually clears at</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --paper: #f3efe6;
-      --ink: #1a1814;
-      --muted: #6d675e;
-      --rule: #d4ccbe;
-      --rust: #8c3a22;
-      --mark: #efe4d2;
-      --panel: #faf7f2;
+      --bg: #08090b;
+      --raised: #0e1013;
+      --sunk: #0b0d10;
+      --ink: #eceae4;
+      --dim: #8b8f98;
+      --faint: #5a5f68;
+      --line: #1d2026;
+      --line-2: #2a2e36;
+      --acid: #ccff33;
+      --heat: #ff7a45;
+      --space: 24px;
     }
     * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     html, body { margin: 0; padding: 0; }
     body {
-      background: var(--paper);
+      background: var(--bg);
       color: var(--ink);
-      font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
-      line-height: 1.45;
+      font-family: Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
-    main { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
-    header { border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink); padding: 18px 0 16px; }
-    .kicker {
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 12px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
+    button, input { font: inherit; color: inherit; }
+    .hidden { display: none !important; }
+
+    .wrap { width: min(1180px, 100% - 48px); margin-inline: auto; }
+
+    .mono {
+      font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      font-variant-numeric: tabular-nums;
     }
-    h1 { font-size: 42px; font-weight: 500; letter-spacing: -0.03em; margin: 6px 0 0; }
-    h1 span { color: var(--rust); }
-    .lede { max-width: 62ch; margin: 10px 0 0; font-size: 18px; }
-    form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px 24px;
-      align-items: end;
-      margin: 28px 0 8px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--rule);
-    }
-    fieldset { border: 0; margin: 0; padding: 0; }
-    legend, label {
-      display: block;
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    .tag {
+      font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
       font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-    .choices { display: flex; gap: 8px; }
-    .choices input { position: absolute; opacity: 0; pointer-events: none; }
-    .choices label {
-      letter-spacing: 0;
-      text-transform: none;
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 14px;
-      color: var(--ink);
-      border: 1px solid var(--rule);
-      padding: 8px 12px;
-      margin: 0;
-      cursor: pointer;
-      background: transparent;
-    }
-    .choices input:checked + label { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-    .choices input:focus-visible + label { outline: 2px solid var(--rust); outline-offset: 2px; }
-    input[type="number"] {
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 16px;
-      background: transparent;
-      color: var(--ink);
-      border: 0;
-      border-bottom: 1px solid var(--ink);
-      width: 120px;
-      padding: 8px 0;
-    }
-    button {
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 14px;
-      background: var(--rust);
-      color: #faf7f2;
-      border: 0;
-      padding: 12px 18px;
-      cursor: pointer;
-    }
-    button:disabled { opacity: 0.55; cursor: progress; }
-    button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
-    #status {
-      min-height: 1.4em;
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 13px;
-      color: var(--muted);
-      margin: 12px 0 20px;
-    }
-    #status.error { color: var(--rust); }
-    section { margin: 28px 0; }
-    h2 {
-      font-size: 13px;
       font-weight: 500;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-      margin: 0 0 12px;
-      color: var(--muted);
+      color: var(--faint);
     }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .card { background: var(--panel); border: 1px solid var(--rule); padding: 14px 16px 16px; }
-    .card .label {
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
+    .serif {
+      font-family: "Instrument Serif", "Iowan Old Style", Palatino, Georgia, serif;
+      font-weight: 400;
     }
-    .figure {
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 28px;
+
+    /* ─────────── landing ─────────── */
+    #gate {
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      padding: 22px 0 26px;
+    }
+    .gate-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 20px;
+    }
+    .brand {
+      font-family: "Instrument Serif", Palatino, serif;
+      font-size: 21px;
+      letter-spacing: 0.01em;
+    }
+    .brand em { font-style: italic; color: var(--acid); }
+
+    .gate-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: clamp(18px, 3vh, 34px);
+      padding: clamp(16px, 4vh, 44px) 0;
+    }
+    h1 {
+      font-family: "Instrument Serif", Palatino, serif;
+      font-weight: 400;
+      font-size: clamp(40px, 5.6vw, 76px);
+      line-height: 1.02;
+      letter-spacing: -0.015em;
+      margin: 10px 0 0;
+      max-width: 17ch;
+    }
+    h1 em { font-style: italic; color: var(--acid); }
+    .lede {
+      margin: 18px 0 0;
+      max-width: 54ch;
+      font-size: 16px;
+      color: var(--dim);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      background: var(--raised);
+    }
+    .stat { padding: 20px 22px 18px; }
+    .stat + .stat { border-left: 1px solid var(--line); }
+    .stat b {
+      display: block;
+      font-family: "IBM Plex Mono", monospace;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      font-size: clamp(34px, 4.4vw, 52px);
+      line-height: 1;
       letter-spacing: -0.03em;
-      margin-top: 8px;
+      color: var(--acid);
     }
-    .reason { color: var(--rust); font-size: 13px; margin-top: 6px; }
-    .note { color: var(--muted); font-size: 14px; max-width: 78ch; }
+    .stat b span { font-size: 0.5em; color: var(--faint); margin-left: 2px; }
+    .stat p { margin: 10px 0 0; color: var(--dim); font-size: 14px; max-width: 32ch; }
+    .stats-foot { margin: 10px 0 0; color: var(--faint); font-size: 13px; max-width: 86ch; }
+
+    .gate-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      padding-top: 20px;
+    }
+    #enter {
+      appearance: none;
+      border: 0;
+      background: var(--acid);
+      color: #0b0d10;
+      padding: 15px 26px;
+      cursor: pointer;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: inline-flex;
+      gap: 14px;
+      align-items: center;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+    #enter:hover { background: #dbff66; transform: translateX(3px); }
+    #enter:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+    .gate-foot p { margin: 0; color: var(--faint); font-size: 13px; max-width: 44ch; }
+
+    /* intro */
+    #veil {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: var(--bg);
+      display: none;
+      place-content: center;
+      padding: 0 8vw;
+    }
+    body.opening #veil { display: grid; }
+    #veil ol {
+      list-style: none;
+      margin: 14px 0 0;
+      padding: 0;
+      font-family: "Instrument Serif", Palatino, serif;
+      font-size: clamp(30px, 4.4vw, 56px);
+      line-height: 1.22;
+    }
+    #veil li { opacity: 0; transform: translateY(8px); }
+    body.opening #veil li { animation: rise 0.4s ease forwards; }
+    body.opening #veil li:nth-child(2) { animation-delay: 0.2s; }
+    body.opening #veil li:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+
+    /* ─────────── instrument ─────────── */
+    #desk { display: none; }
+    body.entered #gate { display: none; }
+    body.entered #desk { display: block; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(8, 9, 11, 0.88);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      height: 58px;
+    }
+    #leave {
+      appearance: none;
+      background: transparent;
+      border: 1px solid var(--line-2);
+      color: var(--dim);
+      padding: 7px 14px;
+      cursor: pointer;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    #leave:hover { color: var(--ink); border-color: var(--ink); }
+
+    .console {
+      border: 1px solid var(--line);
+      background: var(--raised);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 200px auto;
+      margin-top: 26px;
+    }
+    .console fieldset { border: 0; margin: 0; padding: 16px 20px 18px; min-width: 0; }
+    .console legend { padding: 0; }
+    .console .field + .field, .console fieldset + .field { border-left: 1px solid var(--line); }
+    .field { padding: 16px 20px 18px; }
+    .field label { display: block; }
+    .choices { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .choices input { position: absolute; opacity: 0; pointer-events: none; }
+    .choices label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      padding: 8px 14px;
+      cursor: pointer;
+      color: var(--dim);
+      border: 1px solid var(--line-2);
+      background: var(--sunk);
+      transition: color 0.12s, border-color 0.12s;
+    }
+    .choices label:hover { color: var(--ink); }
+    .choices input:checked + label {
+      color: #0b0d10;
+      background: var(--acid);
+      border-color: var(--acid);
+    }
+    .choices input:focus-visible + label { outline: 2px solid var(--ink); outline-offset: 2px; }
+    #size {
+      margin-top: 8px;
+      width: 100%;
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid var(--line-2);
+      padding: 4px 0 6px;
+      font-family: "IBM Plex Mono", monospace;
+      font-variant-numeric: tabular-nums;
+      font-size: 30px;
+      letter-spacing: -0.02em;
+    }
+    #size:focus { outline: none; border-bottom-color: var(--acid); }
+    #run {
+      appearance: none;
+      border: 0;
+      background: var(--acid);
+      color: #0b0d10;
+      padding: 0 34px;
+      cursor: pointer;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    #run:hover:not(:disabled) { background: #dbff66; }
+    #run:disabled { background: var(--line-2); color: var(--faint); cursor: progress; }
+
+    #status {
+      margin: 0;
+      padding: 12px 2px 0;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      color: var(--faint);
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    #status.error { color: var(--heat); }
+    #status::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      flex: none;
+      border-radius: 50%;
+      background: var(--line-2);
+    }
+    #status.busy::before { background: var(--acid); animation: pulse 0.9s ease-in-out infinite; }
+    #status.error::before { background: var(--heat); }
+    #status.done::before { background: var(--acid); }
+    @keyframes pulse { 50% { opacity: 0.2; } }
+
+    main { padding-bottom: 96px; }
+    /* The top bar is sticky, so anything scrolled to must clear it. */
+    section, .verdict, #confirm { scroll-margin-top: 78px; }
+    section { margin-top: 42px; }
+    h2 {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--faint);
+      margin: 0 0 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .note { color: var(--dim); font-size: 13.5px; max-width: 84ch; margin: 12px 0 0; }
+    .reason { color: var(--heat); font-size: 13px; margin: 8px 0 0; }
+
+    /* verdict */
+    .verdict {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      background: var(--raised);
+    }
+    .verdict > div { padding: 20px 22px 22px; min-width: 0; }
+    .verdict > div + div { border-left: 1px solid var(--line); }
+    .verdict .accent { box-shadow: inset 3px 0 0 var(--acid); }
+    .figure {
+      font-family: "IBM Plex Mono", monospace;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      font-size: clamp(28px, 3.2vw, 40px);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-top: 12px;
+      overflow-wrap: anywhere;
+    }
+    .figure.sm { font-size: clamp(20px, 2.1vw, 26px); }
+    .figure.xs { font-size: 15px; letter-spacing: 0; }
+    .figure.down { color: var(--heat); }
+    .figure.up { color: var(--acid); }
+    .sub { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .cards > div { background: var(--raised); padding: 16px 18px 18px; min-width: 0; }
+
     .meta {
       display: grid;
-      grid-template-columns: 180px 1fr;
-      gap: 4px 16px;
-      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-      font-size: 13px;
+      grid-template-columns: max-content minmax(0, 1fr);
+      gap: 7px 20px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12.5px;
+      margin: 0;
     }
-    .meta dt { color: var(--muted); }
-    .meta dd { margin: 0; }
-    table { width: 100%; border-collapse: collapse; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; }
+    .meta dt { color: var(--faint); }
+    .meta dd { margin: 0; overflow-wrap: anywhere; }
+
+    .duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
+
+    .scroller { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: "IBM Plex Mono", monospace;
+      font-variant-numeric: tabular-nums;
+      font-size: 12.5px;
+      white-space: nowrap;
+    }
     th {
       text-align: left;
       font-weight: 500;
-      color: var(--muted);
-      font-size: 11px;
-      letter-spacing: 0.08em;
+      color: var(--faint);
+      font-size: 10.5px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      border-bottom: 1px solid var(--ink);
-      padding: 8px 8px 8px 0;
+      border-bottom: 1px solid var(--line-2);
+      padding: 9px 18px 9px 0;
     }
-    td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
-    tr.requested td { background: var(--mark); }
-    .warn { color: var(--rust); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
-    footer { border-top: 1px solid var(--ink); margin-top: 36px; padding-top: 16px; color: var(--muted); font-size: 14px; max-width: 78ch; }
-    .hidden { display: none; }
-    @media (max-width: 800px) {
-      .grid { grid-template-columns: 1fr; }
-      h1 { font-size: 34px; }
-      .meta { grid-template-columns: 1fr; }
+    td { padding: 10px 18px 10px 0; border-bottom: 1px solid var(--line); color: var(--dim); }
+    td:first-child { color: var(--ink); }
+    tbody tr:hover td { background: var(--raised); }
+    tr.requested td { color: var(--ink); background: rgba(204, 255, 51, 0.08); }
+    tr.requested td:first-child {
+      box-shadow: inset 2px 0 0 var(--acid);
+      padding-left: 12px;
+    }
+
+    ul.warn { margin: 0; padding-left: 20px; color: var(--heat); font-size: 13px; }
+    ul.warn li { margin: 5px 0; }
+
+    #prepare {
+      appearance: none;
+      margin-top: 26px;
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--ink);
+      padding: 15px 26px;
+      cursor: pointer;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    #prepare:hover:not(:disabled) { background: var(--ink); color: var(--bg); }
+    #prepare:disabled { opacity: 0.4; cursor: progress; }
+
+    #confirm { border-left: 2px solid var(--acid); padding-left: 24px; }
+
+    .reveal { animation: reveal 0.34s ease both; }
+    @keyframes reveal { from { opacity: 0; transform: translateY(8px); } }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal, body.opening #veil li, #enter { animation: none; transition: none; }
+    }
+
+    footer {
+      margin-top: 52px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font-size: 13px;
+      max-width: 90ch;
+    }
+
+    /* Short viewports: the landing must not push its own button off screen. */
+    @media (max-height: 780px) {
+      #gate { padding: 16px 0 18px; }
+      .gate-head { padding-bottom: 12px; }
+      .gate-body { gap: 16px; padding: 10px 0; }
+      h1 { font-size: clamp(32px, 4vw, 46px); margin-top: 6px; }
+      .lede { margin-top: 12px; font-size: 15px; }
+      .stat { padding: 14px 18px; }
+      .stat b { font-size: clamp(28px, 3.2vw, 38px); }
+      .stat p { margin-top: 7px; }
+      .stats-foot { margin-top: 8px; }
+      .gate-foot { padding-top: 14px; }
+      #enter { padding: 12px 22px; }
+    }
+
+    @media (max-height: 640px) {
+      #gate { min-height: auto; padding: 14px 0 16px; }
+      .gate-body { justify-content: flex-start; gap: 12px; padding: 6px 0; }
+      h1 { font-size: clamp(26px, 3.4vw, 36px); }
+      .lede { margin-top: 10px; font-size: 14px; max-width: 62ch; }
+      .stat { padding: 12px 16px; }
+      .stat b { font-size: 30px; }
+      .stat p { font-size: 13px; }
+      .stats-foot { font-size: 12px; }
+      .gate-foot { padding-top: 12px; }
+    }
+
+    @media (max-width: 880px) {
+      .console { grid-template-columns: minmax(0, 1fr) 190px; }
+      #run { grid-column: 1 / -1; border-top: 1px solid var(--line); padding: 15px; }
+      .duo { gap: 26px; }
+    }
+    @media (max-width: 680px) {
+      .wrap { width: calc(100% - 32px); }
+      .stats, .verdict, .cards, .duo, .console { grid-template-columns: minmax(0, 1fr); }
+      .stat + .stat, .verdict > div + div { border-left: 0; border-top: 1px solid var(--line); }
+      .console fieldset + .field, .console .field + .field { border-left: 0; border-top: 1px solid var(--line); }
+      .meta { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
+      .meta dd { margin-bottom: 8px; }
     }
   </style>
 </head>
 <body>
-  <main>
-    <header>
-      <p class="kicker">X Layer · tokenized equities · pre-trade</p>
-      <h1>Meri<span>dian</span></h1>
-      <p class="lede">What a sell of this size actually clears at, set next to the issuer's own reference. Every figure is a measurement. A blank means we could not read it.</p>
-    </header>
-
-    <form id="check">
-      <fieldset>
-        <legend>Asset</legend>
-        <div class="choices">
-          <input type="radio" name="symbol" id="asset-nvda" value="NVDAx" checked />
-          <label for="asset-nvda">NVDAx</label>
-          <input type="radio" name="symbol" id="asset-tsla" value="TSLAx" />
-          <label for="asset-tsla">TSLAx</label>
-          <input type="radio" name="symbol" id="asset-aapl" value="AAPLx" />
-          <label for="asset-aapl">AAPLx</label>
-        </div>
-      </fieldset>
-      <div>
-        <label for="size">Size, wrapped tokens</label>
-        <input id="size" name="size" type="number" min="1" max="10000" step="1" value="10" required />
-      </div>
-      <button type="submit" id="run">Check this size</button>
-    </form>
-    <p id="status">Choose an asset and a size. Nothing is shown until a live reading returns.</p>
-
-    <section id="series-section">
-      <h2>Recorded series</h2>
-      <p class="note" id="series-window">Loading the recorded readings.</p>
-      <p class="note" id="series-regimes"></p>
-      <p class="note" id="series-claim"></p>
-      <table>
-        <thead id="series-head"></thead>
-        <tbody id="series-rows"></tbody>
-      </table>
-    </section>
-
-    <div id="results" class="hidden">
-      <section>
-        <h2>Issuer session</h2>
-        <dl class="meta" id="session"></dl>
-        <p class="note" id="local-session"></p>
-      </section>
-
-      <section>
-        <h2>This size against the issuer reference</h2>
-        <p class="note hidden" id="withheld"></p>
-        <div class="grid" id="comparison">
-          <article class="card">
-            <div class="label">Effective price, USD per underlying share</div>
-            <div class="figure" id="effective"></div>
-            <p class="reason hidden" id="effective-reason"></p>
-            <p class="note">Fees and route impact included. This is not a fair value.</p>
-          </article>
-          <article class="card">
-            <div class="label">Issuer reference, USD per share</div>
-            <div class="figure" id="reference"></div>
-            <p class="reason hidden" id="reference-reason"></p>
-            <p class="note" id="reference-meta"></p>
-          </article>
-          <article class="card">
-            <div class="label" id="gap-size-label">Gap at requested size</div>
-            <div class="figure" id="gap-size"></div>
-            <p class="reason hidden" id="gap-size-reason"></p>
-            <p class="label" id="gap-min-label" style="margin-top:14px">Gap at smallest size</p>
-            <div class="figure" id="gap-min" style="font-size:20px"></div>
-            <p class="reason hidden" id="gap-min-reason"></p>
-            <p class="note hidden" id="same-size"></p>
-          </article>
-        </div>
-      </section>
-
-      <section>
-        <h2>OKX market price and market index</h2>
-        <div class="grid">
-          <article class="card">
-            <div class="label">market price</div>
-            <div class="figure" id="market" style="font-size:18px"></div>
-            <p class="reason hidden" id="market-reason"></p>
-          </article>
-          <article class="card">
-            <div class="label">market index</div>
-            <div class="figure" id="index" style="font-size:18px"></div>
-            <p class="reason hidden" id="index-reason"></p>
-          </article>
-          <article class="card">
-            <div class="label">divergence</div>
-            <div class="figure" id="divergence" style="font-size:18px"></div>
-            <p class="reason hidden" id="divergence-reason"></p>
-          </article>
-        </div>
-        <p class="note" id="index-note"></p>
-        <table>
-          <thead>
-            <tr><th>Control</th><th>market price</th><th>market index</th><th>divergence</th><th></th></tr>
-          </thead>
-          <tbody id="controls"></tbody>
-        </table>
-        <p class="note" id="controls-note"></p>
-      </section>
-
-      <section>
-        <h2 id="parity-heading">Quote-token parity</h2>
-        <dl class="meta" id="parity"></dl>
-      </section>
-
-      <section>
-        <h2>Size ladder</h2>
-        <p class="note">Route at the requested size: <span id="route"></span></p>
-        <table>
-          <thead id="ladder-head"></thead>
-          <tbody id="ladder"></tbody>
-        </table>
-        <p class="note" id="ladder-note"></p>
-      </section>
-
-      <section>
-        <h2>Pools</h2>
-        <dl class="meta" id="pools-summary"></dl>
-        <table>
-          <thead id="pool-head"></thead>
-          <tbody id="pools"></tbody>
-        </table>
-        <p class="note" id="pool-note"></p>
-      </section>
-
-      <section id="warnings-section" class="hidden">
-        <h2>Warnings</h2>
-        <ul id="warnings" class="warn"></ul>
-      </section>
-
-      <section>
-        <h2>Provenance</h2>
-        <dl class="meta" id="provenance"></dl>
-      </section>
-
-      <button type="button" id="prepare" class="secondary hidden">Prepare this trade</button>
-      <section id="confirm" class="hidden">
-        <h2>Prepared quote</h2>
-        <p class="note" id="confirm-state"></p>
-        <div class="grid">
-          <article class="card">
-            <div class="label">Effective price, USD per underlying share</div>
-            <div class="figure" id="prep-effective"></div>
-            <p class="reason hidden" id="prep-effective-reason"></p>
-          </article>
-          <article class="card">
-            <div class="label">Minimum received</div>
-            <div class="figure" id="prep-min" style="font-size:22px"></div>
-            <p class="reason hidden" id="prep-min-reason"></p>
-            <p class="note" id="prep-units"></p>
-          </article>
-          <article class="card">
-            <div class="label">Gap at this size</div>
-            <div class="figure" id="prep-gap"></div>
-            <p class="reason hidden" id="prep-gap-reason"></p>
-            <p class="label" style="margin-top:14px">Deadline passed to the router</p>
-            <div class="figure" id="prep-deadline" style="font-size:16px"></div>
-          </article>
-        </div>
-        <dl class="meta" id="prep-move"></dl>
-        <p class="note" id="prep-notice"></p>
-        <p class="note" id="prep-protection"></p>
-      </section>
+  <!-- ─────────── landing ─────────── -->
+  <section id="gate">
+    <div class="wrap gate-head">
+      <div class="brand">Meri<em>dian</em></div>
+      <div class="tag">X Layer · chain 196 · tokenized stocks</div>
     </div>
 
-    <section id="record-section">
-      <h2>On-chain record</h2>
-      <p class="note" id="record-claim">Loading the record from X Layer.</p>
-      <p class="reason hidden" id="record-reason"></p>
-      <dl class="meta" id="record-meta"></dl>
-    </section>
+    <div class="wrap gate-body">
+      <div>
+        <p class="tag">Pre-trade measurement</p>
+        <h1>The price on the screen is not the price a sell <em>clears at</em>.</h1>
+        <p class="lede">One size goes in. Meridian reads what the router would actually deliver, restates it per underlying share, and sets it next to the issuer's own reference. A blank means the read failed. Nothing here is a fair value.</p>
+      </div>
 
-    <footer>
-      Meridian shows measured prices and the source each one came from. It does not compute a fair value. A difference from the issuer reference is a measurement, not protection. This page does not submit a trade. The only on-chain protections on a trade are the minimum amount received and the deadline, and both are parameters of the router call, not of this screen.
-    </footer>
-  </main>
+      <div>
+        <div class="stats">
+          <div class="stat">
+            <b>68.8<span>%</span></b>
+            <p>of volume traded outside the regular US session.</p>
+          </div>
+          <div class="stat">
+            <b>24.5<span>%</span></b>
+            <p>of volume traded while no venue was quoting the underlying.</p>
+          </div>
+        </div>
+        <p class="stats-foot">Two separate shares of the same volume. 30-minute candles, 17 Sep 2026 13:30 UTC through 23 Sep 2026 18:30 UTC. They are not one figure.</p>
+      </div>
+    </div>
+
+    <div class="wrap gate-foot">
+      <button type="button" id="enter">Open the instrument <span aria-hidden="true">→</span></button>
+      <p>Meridian never signs. The page stops at a prepared quote.</p>
+    </div>
+  </section>
+
+  <div id="veil" aria-hidden="true">
+    <div class="wrap">
+      <p class="tag">Before a signature</p>
+      <ol>
+        <li>Pick a size.</li>
+        <li>Read it live.</li>
+        <li>See what you would actually receive.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ─────────── instrument ─────────── -->
+  <div id="desk">
+    <div class="topbar">
+      <div class="wrap">
+        <div class="brand">Meri<em>dian</em></div>
+        <div class="tag">Instrument · does not sign</div>
+        <button type="button" id="leave">Back</button>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <form id="check" class="console">
+        <fieldset>
+          <legend class="tag">Asset</legend>
+          <div class="choices">
+            <input type="radio" name="symbol" id="asset-nvda" value="NVDAx" checked />
+            <label for="asset-nvda">NVDAx</label>
+            <input type="radio" name="symbol" id="asset-tsla" value="TSLAx" />
+            <label for="asset-tsla">TSLAx</label>
+            <input type="radio" name="symbol" id="asset-aapl" value="AAPLx" />
+            <label for="asset-aapl">AAPLx</label>
+          </div>
+        </fieldset>
+        <div class="field">
+          <label class="tag" for="size">Wrapped tokens</label>
+          <input id="size" name="size" type="number" min="1" max="10000" step="1" value="10" required />
+        </div>
+        <button type="submit" id="run">Check this size</button>
+      </form>
+      <p id="status">Nothing is on the tape until a live reading returns.</p>
+    </div>
+
+    <main class="wrap">
+      <div id="results" class="hidden">
+        <section>
+          <h2>This size against the issuer reference</h2>
+          <p class="note reason hidden" id="withheld"></p>
+          <div class="verdict" id="comparison">
+            <div class="accent">
+              <div class="tag">Effective · USD per underlying share</div>
+              <div class="figure" id="effective"></div>
+              <p class="reason hidden" id="effective-reason"></p>
+              <p class="note">Fees and route impact included. Not a fair value.</p>
+            </div>
+            <div>
+              <div class="tag">Issuer reference · USD per share</div>
+              <div class="figure" id="reference"></div>
+              <p class="reason hidden" id="reference-reason"></p>
+              <p class="note" id="reference-meta"></p>
+            </div>
+            <div>
+              <div class="tag" id="gap-size-label">Gap at requested size</div>
+              <div class="figure" id="gap-size"></div>
+              <p class="reason hidden" id="gap-size-reason"></p>
+              <div class="sub">
+                <div class="tag" id="gap-min-label">Gap at smallest size</div>
+                <div class="figure sm" id="gap-min"></div>
+                <p class="reason hidden" id="gap-min-reason"></p>
+              </div>
+              <p class="note hidden" id="same-size"></p>
+            </div>
+          </div>
+        </section>
+
+        <div class="duo">
+          <section>
+            <h2>Issuer session</h2>
+            <dl class="meta" id="session"></dl>
+            <p class="note" id="local-session"></p>
+          </section>
+          <section>
+            <h2 id="parity-heading">Quote-token parity</h2>
+            <dl class="meta" id="parity"></dl>
+          </section>
+        </div>
+
+        <section>
+          <h2>Size ladder</h2>
+          <div class="scroller">
+            <table>
+              <thead id="ladder-head"></thead>
+              <tbody id="ladder"></tbody>
+            </table>
+          </div>
+          <p class="note">Route at the requested size: <span id="route" class="mono"></span></p>
+          <p class="note" id="ladder-note"></p>
+        </section>
+
+        <section>
+          <h2>OKX market price and market index</h2>
+          <div class="cards">
+            <div>
+              <div class="tag">market price</div>
+              <div class="figure sm" id="market"></div>
+              <p class="reason hidden" id="market-reason"></p>
+            </div>
+            <div>
+              <div class="tag">market index</div>
+              <div class="figure sm" id="index"></div>
+              <p class="reason hidden" id="index-reason"></p>
+            </div>
+            <div>
+              <div class="tag">divergence</div>
+              <div class="figure sm" id="divergence"></div>
+              <p class="reason hidden" id="divergence-reason"></p>
+            </div>
+          </div>
+          <p class="note" id="index-note"></p>
+          <div class="scroller">
+            <table>
+              <thead>
+                <tr><th>Control</th><th>market price</th><th>market index</th><th>divergence</th><th></th></tr>
+              </thead>
+              <tbody id="controls"></tbody>
+            </table>
+          </div>
+          <p class="note" id="controls-note"></p>
+        </section>
+
+        <section>
+          <h2>Pools</h2>
+          <dl class="meta" id="pools-summary"></dl>
+          <div class="scroller">
+            <table>
+              <thead id="pool-head"></thead>
+              <tbody id="pools"></tbody>
+            </table>
+          </div>
+          <p class="note" id="pool-note"></p>
+        </section>
+
+        <section id="warnings-section" class="hidden">
+          <h2>Warnings</h2>
+          <ul id="warnings" class="warn"></ul>
+        </section>
+
+        <section>
+          <h2>Prepare</h2>
+          <button type="button" id="prepare" class="hidden">Prepare this trade</button>
+          <div id="confirm" class="hidden" style="margin-top:26px">
+            <p class="note" id="confirm-state" style="margin-top:0"></p>
+            <div class="cards" style="margin-top:14px">
+              <div>
+                <div class="tag">Effective · USD per underlying share</div>
+                <div class="figure sm" id="prep-effective"></div>
+                <p class="reason hidden" id="prep-effective-reason"></p>
+              </div>
+              <div>
+                <div class="tag">Minimum received</div>
+                <div class="figure sm" id="prep-min"></div>
+                <p class="reason hidden" id="prep-min-reason"></p>
+                <p class="note" id="prep-units"></p>
+              </div>
+              <div>
+                <div class="tag">Gap at this size</div>
+                <div class="figure sm" id="prep-gap"></div>
+                <p class="reason hidden" id="prep-gap-reason"></p>
+                <div class="sub">
+                  <div class="tag">Deadline</div>
+                  <div class="figure xs mono" id="prep-deadline"></div>
+                </div>
+              </div>
+            </div>
+            <dl class="meta" id="prep-move" style="margin-top:18px"></dl>
+            <p class="note" id="prep-notice"></p>
+            <p class="note" id="prep-protection"></p>
+          </div>
+        </section>
+
+        <section>
+          <h2>Provenance</h2>
+          <dl class="meta" id="provenance"></dl>
+        </section>
+      </div>
+
+      <section id="series-section">
+        <h2>Recorded series</h2>
+        <p class="note" id="series-window" style="margin-top:0">Loading the recorded readings.</p>
+        <p class="note" id="series-regimes"></p>
+        <p class="note" id="series-claim"></p>
+        <div class="scroller" style="margin-top:16px">
+          <table>
+            <thead id="series-head"></thead>
+            <tbody id="series-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="record-section">
+        <h2>On-chain record</h2>
+        <p class="note" id="record-claim" style="margin-top:0">Loading the record from X Layer.</p>
+        <p class="reason hidden" id="record-reason"></p>
+        <dl class="meta" id="record-meta" style="margin-top:16px"></dl>
+      </section>
+
+      <footer>
+        Meridian shows measured prices and the source each one came from. It does not compute a fair value. A difference from the issuer reference is a measurement, not protection. This page does not submit a trade. The only on-chain protections on a trade are the minimum amount received and the deadline, and both are parameters of the router call, not of this screen.
+      </footer>
+    </main>
+  </div>
+
   <script>
     const form = document.getElementById("check");
     const status = document.getElementById("status");
     const results = document.getElementById("results");
     const button = document.getElementById("run");
 
+    function setStatus(text, state) {
+      status.textContent = text;
+      status.classList.remove("busy", "error", "done");
+      if (state) status.classList.add(state);
+    }
+
+    function reveal(node) {
+      node.classList.remove("reveal");
+      void node.offsetWidth;
+      node.classList.add("reveal");
+    }
+
+    function enterInstrument() {
+      if (document.body.classList.contains("entered")) return;
+      document.body.classList.add("opening");
+      window.setTimeout(() => {
+        document.body.classList.remove("opening");
+        document.body.classList.add("entered");
+        history.replaceState(null, "", "#instrument");
+      }, 1400);
+    }
+
+    document.getElementById("enter").addEventListener("click", enterInstrument);
+    document.getElementById("leave").addEventListener("click", () => {
+      document.body.classList.remove("entered");
+      history.replaceState(null, "", location.pathname);
+      window.scrollTo(0, 0);
+    });
+    if (location.hash === "#instrument") document.body.classList.add("entered");
+
     function field(id, value) {
       const node = document.getElementById(id);
       const reason = document.getElementById(id + "-reason");
-      node.textContent = value.text;
+      const text = value.text ?? "";
+      node.textContent = text;
+      node.classList.toggle("down", text.startsWith("-") || text.startsWith("−"));
+      node.classList.toggle("up", text.startsWith("+"));
       if (reason) {
         reason.textContent = value.reason ?? "";
         reason.classList.toggle("hidden", !value.reason);
@@ -495,14 +912,17 @@
         ["calc", view.calcVersion],
         ["cli", view.cliVersion],
       ]);
+
       const prepare = document.getElementById("prepare");
       prepare.dataset.sampleId = view.sampleId;
-      prepare.classList.remove("hidden");
+      prepare.classList.toggle("hidden", view.comparisonHidden);
       document.getElementById("confirm").classList.add("hidden");
+      reveal(document.getElementById("comparison"));
     }
 
     function showPreparation(view) {
-      document.getElementById("confirm").classList.remove("hidden");
+      const confirm = document.getElementById("confirm");
+      confirm.classList.remove("hidden");
       document.getElementById("confirm-state").textContent =
         view.state + ". Fresh quote at " + view.freshTakenAt + ". The panel quote from " + view.panelTakenAt + " was not reused.";
       field("prep-effective", view.effectiveUsd);
@@ -520,6 +940,7 @@
       ]);
       document.getElementById("prep-notice").textContent = view.notice;
       document.getElementById("prep-protection").textContent = view.protection;
+      reveal(confirm);
     }
 
     async function loadSeries() {
@@ -535,8 +956,8 @@
         document.getElementById("series-regimes").textContent = body.regimeText;
         document.getElementById("series-claim").textContent = body.claimText;
         head("series-head", body.headers);
-        const rows = document.getElementById("series-rows");
-        rows.replaceChildren();
+        const seriesRows = document.getElementById("series-rows");
+        seriesRows.replaceChildren();
         for (const row of body.rows) {
           const tr = document.createElement("tr");
           for (const cell of [row.sampledAt, row.symbol, row.issuerPeriod, row.gap, row.sizeTokens]) {
@@ -544,46 +965,12 @@
             td.textContent = cell;
             tr.appendChild(td);
           }
-          rows.appendChild(tr);
+          seriesRows.appendChild(tr);
         }
       } catch (error) {
         windowText.textContent = "The recorded series could not be read.";
       }
     }
-
-    document.getElementById("prepare").addEventListener("click", async () => {
-      const prepare = document.getElementById("prepare");
-      const data = new FormData(form);
-      const symbol = String(data.get("symbol") ?? "");
-      const size = String(data.get("size") ?? "");
-      const sampleId = prepare.dataset.sampleId ?? "";
-      document.getElementById("confirm").classList.add("hidden");
-      status.classList.remove("error");
-      status.textContent = "Taking a fresh quote. The panel reading will not be the one prepared.";
-      prepare.disabled = true;
-      button.disabled = true;
-      try {
-        const response = await fetch(
-          "/api/prepare?symbol=" + encodeURIComponent(symbol) +
-            "&size=" + encodeURIComponent(size) +
-            "&sampleId=" + encodeURIComponent(sampleId),
-        );
-        const body = await response.json();
-        if (!response.ok || body.error) {
-          status.classList.add("error");
-          status.textContent = body.error || "The fresh quote failed.";
-          return;
-        }
-        showPreparation(body);
-        status.textContent = "Prepared " + body.symbol + " from a new quote. Nothing was signed.";
-      } catch (error) {
-        status.classList.add("error");
-        status.textContent = "The fresh quote failed before a sample came back.";
-      } finally {
-        prepare.disabled = false;
-        button.disabled = false;
-      }
-    });
 
     async function loadRecord() {
       const claim = document.getElementById("record-claim");
@@ -602,7 +989,7 @@
         reason.classList.toggle("hidden", !body.reason);
         definition(
           "record-meta",
-          (body.fields || []).map((field) => [field.label, field.reason ? field.text + " — " + field.reason : field.text]),
+          (body.fields || []).map((item) => [item.label, item.reason ? item.text + " — " + item.reason : item.text]),
         );
       } catch (error) {
         claim.textContent = "The on-chain record could not be read.";
@@ -611,8 +998,36 @@
       }
     }
 
-    void loadSeries();
-    void loadRecord();
+    document.getElementById("prepare").addEventListener("click", async () => {
+      const prepare = document.getElementById("prepare");
+      const data = new FormData(form);
+      const symbol = String(data.get("symbol") ?? "");
+      const size = String(data.get("size") ?? "");
+      const sampleId = prepare.dataset.sampleId ?? "";
+      document.getElementById("confirm").classList.add("hidden");
+      setStatus("Taking a fresh quote. The panel reading will not be the one prepared.", "busy");
+      prepare.disabled = true;
+      button.disabled = true;
+      try {
+        const response = await fetch(
+          "/api/prepare?symbol=" + encodeURIComponent(symbol) +
+            "&size=" + encodeURIComponent(size) +
+            "&sampleId=" + encodeURIComponent(sampleId),
+        );
+        const body = await response.json();
+        if (!response.ok || body.error) {
+          setStatus(body.error || "The fresh quote failed.", "error");
+          return;
+        }
+        showPreparation(body);
+        setStatus("Prepared " + body.symbol + " from a new quote. Nothing was signed.", "done");
+      } catch (error) {
+        setStatus("The fresh quote failed before a sample came back.", "error");
+      } finally {
+        prepare.disabled = false;
+        button.disabled = false;
+      }
+    });
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -620,26 +1035,26 @@
       const symbol = String(data.get("symbol") ?? "");
       const size = String(data.get("size") ?? "");
       results.classList.add("hidden");
-      status.classList.remove("error");
-      status.textContent = "Reading the router, the issuer, and X Layer. This is a live reading, not a cached price.";
+      setStatus("Reading the router, the issuer, and X Layer.", "busy");
       button.disabled = true;
       try {
         const response = await fetch("/api/panel?symbol=" + encodeURIComponent(symbol) + "&size=" + encodeURIComponent(size));
         const body = await response.json();
         if (!response.ok || body.error) {
-          status.classList.add("error");
-          status.textContent = body.error || "The reading failed.";
+          setStatus(body.error || "The reading failed.", "error");
           return;
         }
         show(body);
-        status.textContent = "Live reading for " + body.symbol + " at " + body.sampledAt + ".";
+        setStatus("Live reading for " + body.symbol + " at " + body.sampledAt + ".", "done");
       } catch (error) {
-        status.classList.add("error");
-        status.textContent = "The reading failed before a sample came back.";
+        setStatus("The reading failed before a sample came back.", "error");
       } finally {
         button.disabled = false;
       }
     });
+
+    void loadSeries();
+    void loadRecord();
   </script>
 </body>
 </html>

@@ -67,11 +67,13 @@ npm install
 npm run panel
 ```
 
-Open [http://localhost:4173](http://localhost:4173). Pick an asset and a size, then
-**Check this size**. The recorded series is on the same page: how many readings, over
-what window, and the issuer period of each. It does not claim the gap widens on weekends.
+Open [http://localhost:4173](http://localhost:4173). The landing page states the locked
+volume figures and opens the instrument. Pick an asset and a size, then **Check this size**.
+The recorded series and the on-chain attestation readback sit below the live reading.
+It does not claim the gap widens on weekends.
 
-**Prepare this trade** takes a new quote and shows how it moved. Nothing is signed.
+**Prepare this trade** appears only when the issuer reference and USD restatement are
+available. It takes a new quote and shows how it moved. Nothing is signed.
 The page also reads the latest measurement back from `MeridianAttestation` on X Layer.
 That read does not write, and it does not recompute the price.
 
