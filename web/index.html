@@ -19,8 +19,12 @@
       --line: #1d2026;
       --line-2: #2a2e36;
       --acid: #ccff33;
+      --amber: #ff7a45;
       --heat: #ff7a45;
-      --space: 24px;
+      --night: #9bb0c9;
+      --press: 120ms;
+      --hover: 220ms;
+      --reveal: 480ms;
     }
     * { box-sizing: border-box; }
     html { -webkit-text-size-adjust: 100%; }
@@ -38,41 +42,55 @@
     }
     body.entered { background: var(--bg); }
     button, input { font: inherit; color: inherit; }
+    button { transition: background var(--press) ease, color var(--press) ease, border-color var(--hover) ease, transform var(--press) ease; }
+    button:active:not(:disabled) { transform: translateY(1px); }
+    :focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
     .hidden { display: none !important; }
-
     .wrap { width: min(1180px, 100% - 48px); margin-inline: auto; }
-
-    .mono {
+    .mono, .figure, .tag, .meta, table, #status, .choices label, #run, #prepare, .app-nav button, .node .name, .trace, .readout {
       font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
       font-variant-numeric: tabular-nums;
     }
     .tag {
-      font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
       font-size: 11px;
       font-weight: 500;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--faint);
     }
-    .serif {
-      font-family: "Instrument Serif", "Iowan Old Style", Palatino, Georgia, serif;
-      font-weight: 400;
-    }
+    a { color: var(--ink); }
+    a:hover { color: var(--acid); }
 
-    /* ─────────── landing ─────────── */
     #gate {
+      position: relative;
       min-height: 100svh;
       display: flex;
       flex-direction: column;
       padding: 22px 0 26px;
+      overflow: hidden;
     }
-    .gate-head {
+    #gate::before {
+      content: "";
+      position: absolute;
+      inset: -8%;
+      background-image:
+        linear-gradient(rgba(236, 234, 228, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(236, 234, 228, 0.045) 1px, transparent 1px);
+      background-size: 64px 64px;
+      animation: drift 56s linear infinite;
+      pointer-events: none;
+      mask-image: radial-gradient(ellipse at 30% 20%, #000 20%, transparent 72%);
+    }
+    #gate > * { position: relative; z-index: 1; }
+    @keyframes drift { to { background-position: 64px 64px; } }
+
+    .gate-head, .topbar .wrap {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
-      padding-bottom: 20px;
     }
+    .gate-head { padding-bottom: 20px; }
     .brand {
       display: flex;
       align-items: center;
@@ -91,50 +109,34 @@
       text-align: left;
     }
     button.brand:hover { color: var(--acid); }
-    button.brand:focus-visible { outline: 2px solid var(--acid); outline-offset: 4px; }
-    .logo {
-      width: 34px;
-      height: 34px;
-      overflow: hidden;
-      flex: none;
-    }
-    .logo img {
-      display: block;
-      width: 118px;
-      height: 118px;
-      margin: -42px;
-    }
+    .logo { width: 34px; height: 34px; overflow: hidden; flex: none; }
+    .logo img { display: block; width: 118px; height: 118px; margin: -42px; }
 
     .gate-body {
       flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: clamp(18px, 3vh, 34px);
-      padding: clamp(16px, 4vh, 44px) 0;
+      gap: clamp(18px, 3vh, 28px);
+      padding: clamp(12px, 3vh, 36px) 0;
     }
     h1 {
       font-family: "Instrument Serif", Palatino, serif;
       font-weight: 400;
-      font-size: clamp(40px, 5.6vw, 76px);
+      font-size: clamp(40px, 5.6vw, 72px);
       line-height: 1.02;
       letter-spacing: -0.015em;
       margin: 10px 0 0;
-      max-width: 17ch;
+      max-width: 16ch;
     }
     h1 em { font-style: italic; color: var(--acid); }
-    .lede {
-      margin: 18px 0 0;
-      max-width: 54ch;
-      font-size: 16px;
-      color: var(--dim);
-    }
+    .lede { margin: 18px 0 0; max-width: 58ch; font-size: 16px; color: var(--dim); }
 
     .stats {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       border: 1px solid var(--line);
-      background: var(--raised);
+      background: rgba(16, 18, 22, 0.92);
     }
     .stat { padding: 20px 22px 18px; }
     .stat + .stat { border-left: 1px solid var(--line); }
@@ -149,8 +151,24 @@
       color: var(--acid);
     }
     .stat b span { font-size: 0.5em; color: var(--faint); margin-left: 2px; }
-    .stat p { margin: 10px 0 0; color: var(--dim); font-size: 14px; max-width: 32ch; }
+    .stat p { margin: 10px 0 0; color: var(--dim); font-size: 14px; max-width: 34ch; }
     .stats-foot { margin: 10px 0 0; color: var(--faint); font-size: 13px; max-width: 86ch; }
+
+    .schematic {
+      margin: 0;
+      border: 1px solid var(--line);
+      background: rgba(11, 13, 16, 0.75);
+      padding: 14px 16px 12px;
+      max-width: 640px;
+    }
+    .schematic svg { display: block; width: 100%; height: auto; }
+    .schematic figcaption { margin: 0 0 8px; color: var(--dim); font-size: 13px; max-width: 62ch; }
+    .flow { stroke: var(--line-2); stroke-width: 1; fill: none; }
+    .thin { stroke: var(--amber); stroke-width: 3; }
+    .tick { stroke: var(--faint); stroke-width: 1; }
+    .schematic text { fill: var(--faint); font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: 0.08em; }
+    .packet { fill: var(--acid); animation: travel 11s linear infinite; }
+    @keyframes travel { from { transform: translateX(0); } to { transform: translateX(250px); } }
 
     .gate-foot {
       display: flex;
@@ -176,13 +194,10 @@
       display: inline-flex;
       gap: 14px;
       align-items: center;
-      transition: transform 0.12s ease, background 0.12s ease;
     }
-    #enter:hover { background: #dbff66; transform: translateX(3px); }
-    #enter:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+    #enter:hover { background: #dbff66; }
     .gate-foot p { margin: 0; color: var(--faint); font-size: 13px; max-width: 44ch; }
 
-    /* intro */
     #veil {
       position: fixed;
       inset: 0;
@@ -198,16 +213,15 @@
       margin: 14px 0 0;
       padding: 0;
       font-family: "Instrument Serif", Palatino, serif;
-      font-size: clamp(30px, 4.4vw, 56px);
-      line-height: 1.22;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.25;
     }
     #veil li { opacity: 0; transform: translateY(8px); }
-    body.opening #veil li { animation: rise 0.4s ease forwards; }
-    body.opening #veil li:nth-child(2) { animation-delay: 0.2s; }
-    body.opening #veil li:nth-child(3) { animation-delay: 0.4s; }
+    body.opening #veil li { animation: rise 0.42s ease forwards; }
+    body.opening #veil li:nth-child(2) { animation-delay: 0.16s; }
+    body.opening #veil li:nth-child(3) { animation-delay: 0.32s; }
     @keyframes rise { to { opacity: 1; transform: none; } }
 
-    /* ─────────── instrument ─────────── */
     #desk { display: none; }
     body.entered #gate { display: none; }
     body.entered #desk { display: block; }
@@ -216,17 +230,10 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background: rgba(8, 9, 11, 0.88);
-      backdrop-filter: blur(10px);
+      background: #08090b;
       border-bottom: 1px solid var(--line);
     }
-    .topbar .wrap {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      height: 58px;
-    }
+    .topbar .wrap { height: 58px; }
     #leave {
       appearance: none;
       background: transparent;
@@ -245,69 +252,31 @@
       border: 1px solid var(--line);
       background: var(--raised);
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 200px auto;
-      margin-top: 26px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+      margin-top: 22px;
     }
-    .console fieldset { border: 0; margin: 0; padding: 16px 20px 18px; min-width: 0; }
+    .console fieldset { border: 0; margin: 0; padding: 16px 18px 18px; min-width: 0; }
+    .console fieldset + fieldset { border-left: 1px solid var(--line); }
     .console legend { padding: 0; }
-    .console .field + .field, .console fieldset + .field { border-left: 1px solid var(--line); }
-    .field { padding: 16px 20px 18px; }
-    .field label { display: block; }
     .choices { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-    .choices input { position: absolute; opacity: 0; pointer-events: none; }
+    .choices input { position: absolute; opacity: 0; width: 1px; height: 1px; }
     .choices label {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
-      letter-spacing: 0.02em;
-      padding: 8px 14px;
+      padding: 8px 12px;
       cursor: pointer;
       color: var(--dim);
       border: 1px solid var(--line-2);
       background: var(--sunk);
-      transition: color 0.12s, border-color 0.12s;
+      transition: color var(--hover) ease, border-color var(--hover) ease, background var(--press) ease;
     }
     .choices label:hover { color: var(--ink); }
-    .choices input:checked + label {
-      color: #0b0d10;
-      background: var(--acid);
-      border-color: var(--acid);
-    }
+    .choices input:checked + label { color: #0b0d10; background: var(--acid); border-color: var(--acid); }
     .choices input:focus-visible + label { outline: 2px solid var(--ink); outline-offset: 2px; }
-    #size {
-      margin-top: 8px;
-      width: 100%;
-      background: transparent;
-      border: 0;
-      border-bottom: 1px solid var(--line-2);
-      padding: 4px 0 6px;
-      font-family: "IBM Plex Mono", monospace;
-      font-variant-numeric: tabular-nums;
-      font-size: 30px;
-      letter-spacing: -0.02em;
-    }
-    #size:focus { outline: none; border-bottom-color: var(--acid); }
-    #run {
-      appearance: none;
-      border: 0;
-      background: var(--acid);
-      color: #0b0d10;
-      padding: 0 34px;
-      cursor: pointer;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-    #run:hover:not(:disabled) { background: #dbff66; }
-    #run:disabled { background: var(--line-2); color: var(--faint); cursor: progress; }
 
     #status {
       margin: 0;
       padding: 12px 2px 0;
-      font-family: "IBM Plex Mono", monospace;
       font-size: 12px;
       color: var(--faint);
       min-height: 34px;
@@ -315,24 +284,21 @@
       align-items: center;
       gap: 9px;
     }
-    #status.error { color: var(--heat); }
     #status::before {
       content: "";
-      width: 6px;
-      height: 6px;
-      flex: none;
-      border-radius: 50%;
+      width: 6px; height: 6px; flex: none; border-radius: 50%;
       background: var(--line-2);
     }
-    #status.busy::before { background: var(--acid); animation: pulse 0.9s ease-in-out infinite; }
-    #status.error::before { background: var(--heat); }
+    #status.busy::before { background: var(--acid); animation: pulse 1.1s ease-in-out infinite; }
+    #status.error { color: var(--heat); }
+    #status.error::before { background: var(--heat); animation: none; }
     #status.done::before { background: var(--acid); }
-    @keyframes pulse { 50% { opacity: 0.2; } }
+    #status.stale { color: var(--amber); }
+    #status.stale::before { background: var(--amber); animation: none; }
+    @keyframes pulse { 50% { opacity: 0.25; } }
 
-    main { padding-bottom: 96px; }
-    /* The top bar is sticky, so anything scrolled to must clear it. */
+    .app-main { padding-bottom: 80px; }
     section, .verdict, #confirm { scroll-margin-top: 78px; }
-    section { margin-top: 42px; }
     h2 {
       font-family: "IBM Plex Mono", monospace;
       font-size: 11px;
@@ -347,143 +313,113 @@
     .note { color: var(--dim); font-size: 13.5px; max-width: 84ch; margin: 12px 0 0; }
     .reason { color: var(--heat); font-size: 13px; margin: 8px 0 0; }
 
-    /* verdict */
-    .verdict {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .pipeline {
+      margin-top: 18px;
       border: 1px solid var(--line);
       background: var(--raised);
+      padding: 16px 16px 14px;
     }
-    .verdict > div { padding: 20px 22px 22px; min-width: 0; }
-    .verdict > div + div { border-left: 1px solid var(--line); }
-    .verdict .accent { box-shadow: inset 3px 0 0 var(--acid); }
-    .figure {
-      font-family: "IBM Plex Mono", monospace;
-      font-variant-numeric: tabular-nums;
-      font-weight: 500;
-      font-size: clamp(28px, 3.2vw, 40px);
-      line-height: 1.08;
-      letter-spacing: -0.03em;
-      margin-top: 12px;
-      overflow-wrap: anywhere;
-    }
-    .figure.sm { font-size: clamp(20px, 2.1vw, 26px); }
-    .figure.xs { font-size: 15px; letter-spacing: 0; }
-    .figure.down { color: var(--heat); }
-    .figure.up { color: var(--acid); }
-    .sub { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
-
-    .cards {
+    .pipeline-top { display: flex; justify-content: space-between; gap: 16px; align-items: end; flex-wrap: wrap; }
+    #pipeline-label { margin: 6px 0 0; color: var(--ink); font-size: 14px; min-height: 1.4em; }
+    .pipeline-nodes {
+      list-style: none;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
-      background: var(--line);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 14px 0 0;
+      padding: 0;
+      position: relative;
+    }
+    .pipeline[data-state="running"] .pipeline-nodes::before {
+      content: "";
+      position: absolute;
+      left: 4%;
+      right: 4%;
+      top: 16px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--acid), transparent);
+      background-size: 28% 100%;
+      animation: signal 1.4s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes signal { from { background-position: -20% 0; } to { background-position: 120% 0; } }
+    .node {
+      min-height: 92px;
+      padding: 10px 10px 12px;
+      background: var(--sunk);
       border: 1px solid var(--line);
     }
-    .cards > div { background: var(--raised); padding: 16px 18px 18px; min-width: 0; }
-
-    .meta {
-      display: grid;
-      grid-template-columns: max-content minmax(0, 1fr);
-      gap: 7px 20px;
+    .node .name { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+    .node .detail { display: block; margin-top: 8px; min-height: 2.6em; color: var(--faint); font-size: 12px; line-height: 1.35; }
+    .mark {
+      display: inline-grid;
+      place-items: center;
+      width: 16px; height: 16px;
+      margin-bottom: 8px;
+      border: 1px solid var(--line-2);
+      color: #0b0d10;
+      font-size: 11px;
       font-family: "IBM Plex Mono", monospace;
-      font-size: 12.5px;
-      margin: 0;
     }
-    .meta dt { color: var(--faint); }
-    .meta dd { margin: 0; overflow-wrap: anywhere; }
+    .node[data-state="active"] { border-color: rgba(204, 255, 51, 0.55); }
+    .node[data-state="active"] .mark { border-color: var(--acid); background: rgba(204, 255, 51, 0.15); }
+    .node[data-state="active"] .name, .node[data-state="done"] .name { color: var(--ink); }
+    .node[data-state="done"] .mark { background: var(--acid); border-color: var(--acid); }
+    .node[data-state="done"] .mark::before { content: "✓"; animation: check 280ms ease; }
+    .node[data-state="done"] .detail { color: var(--dim); }
+    .node[data-state="fail"] { border-color: rgba(255, 122, 69, 0.7); }
+    .node[data-state="fail"] .mark { background: var(--heat); border-color: var(--heat); color: #1a0d0b; }
+    .node[data-state="fail"] .mark::before { content: "!"; }
+    .node[data-state="fail"] .detail { color: var(--heat); }
+    .node[data-state="stopped"] { opacity: 0.72; }
+    .node[data-state="stopped"] .detail { color: var(--faint); }
+    @keyframes check { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
 
-    .duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
-
-    .scroller { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: "IBM Plex Mono", monospace;
-      font-variant-numeric: tabular-nums;
-      font-size: 12.5px;
-      white-space: nowrap;
-    }
-    th {
-      text-align: left;
-      font-weight: 500;
-      color: var(--faint);
-      font-size: 10.5px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--line-2);
-      padding: 9px 18px 9px 0;
-    }
-    td { padding: 10px 18px 10px 0; border-bottom: 1px solid var(--line); color: var(--dim); }
-    td:first-child { color: var(--ink); }
-    tbody tr:hover td { background: var(--raised); }
-    tr.requested td { color: var(--ink); background: rgba(204, 255, 51, 0.08); }
-    tr.requested td:first-child {
-      box-shadow: inset 2px 0 0 var(--acid);
-      padding-left: 12px;
-    }
-
-    ul.warn { margin: 0; padding-left: 20px; color: var(--heat); font-size: 13px; }
-    ul.warn li { margin: 5px 0; }
-
-    #prepare {
+    .measure-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 14px; }
+    #run, #prepare {
       appearance: none;
-      margin-top: 26px;
-      background: transparent;
-      color: var(--ink);
-      border: 1px solid var(--ink);
-      padding: 15px 26px;
+      border: 0;
       cursor: pointer;
-      font-family: "IBM Plex Mono", monospace;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
-    #prepare:hover:not(:disabled) { background: var(--ink); color: var(--bg); }
-    #prepare:disabled { opacity: 0.4; cursor: progress; }
+    #run { background: var(--acid); color: #0b0d10; padding: 14px 22px; }
+    #run:hover:not(:disabled) { background: #dbff66; }
+    #run:disabled, #prepare:disabled { background: var(--line-2); color: var(--faint); cursor: progress; }
+    #run.is-live { background: var(--sunk); color: var(--acid); border: 1px solid rgba(204, 255, 51, 0.45); }
+    #run-caption { margin: 0; color: var(--faint); font-size: 12px; max-width: 62ch; }
 
-    #confirm { border-left: 2px solid var(--acid); padding-left: 24px; }
-
-    .reveal { animation: reveal 0.34s ease both; }
-    @keyframes reveal { from { opacity: 0; transform: translateY(8px); } }
-    @media (prefers-reduced-motion: reduce) {
-      .reveal, body.opening #veil li, #enter { animation: none; transition: none; }
+    .quote-route { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; min-height: 28px; }
+    .route-chip {
+      border: 1px solid var(--line-2);
+      background: var(--sunk);
+      color: var(--ink);
+      padding: 4px 8px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
     }
-
-    footer {
-      margin-top: 52px;
-      padding-top: 18px;
-      border-top: 1px solid var(--line);
-      color: var(--faint);
-      font-size: 13px;
-      max-width: 90ch;
-    }
-
-    .app-main { padding-bottom: 96px; }
+    .route-chip.pending { color: var(--dim); }
+    .route-chip.fail { color: var(--heat); border-color: rgba(255, 122, 69, 0.6); }
+    .route-arrow { color: var(--faint); font-size: 12px; }
 
     .tape-bar {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, auto));
-      gap: 8px 20px;
-      align-items: baseline;
-      margin-top: 18px;
-      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 16px;
+      padding: 10px 12px;
       border: 1px solid var(--line);
       background: var(--raised);
       font-family: "IBM Plex Mono", monospace;
       font-size: 12px;
-      font-variant-numeric: tabular-nums;
     }
-    .tape-bar .pill {
-      padding: 4px 10px;
-      border: 1px solid var(--line-2);
-      background: var(--sunk);
-      white-space: nowrap;
-    }
-    .tape-bar .pill.live { border-color: rgba(204, 255, 51, 0.35); color: var(--acid); }
-    .tape-bar .pill.down { color: var(--heat); }
-    .tape-bar .pill.up { color: var(--acid); }
+    .tape-bar .pill { padding: 4px 10px; border: 1px solid var(--line-2); background: var(--sunk); }
+    .tape-bar .pill.live { border-color: rgba(204, 255, 51, 0.4); color: var(--acid); }
+    .pill.tone-review, .pill.tone-adverse { color: var(--heat); border-color: rgba(255, 122, 69, 0.55); }
+    .pill.tone-up { color: var(--acid); border-color: rgba(204, 255, 51, 0.45); }
 
     .app-nav {
       display: flex;
@@ -503,120 +439,288 @@
       color: var(--dim);
       padding: 10px 16px;
       cursor: pointer;
-      font-family: "IBM Plex Mono", monospace;
       font-size: 11px;
       font-weight: 500;
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
     .app-nav button:hover { color: var(--ink); }
-    .app-nav button.active {
-      background: var(--raised);
-      color: var(--ink);
-      box-shadow: inset 0 -2px 0 var(--acid);
-    }
+    .app-nav button.active { background: var(--raised); color: var(--ink); box-shadow: inset 0 -2px 0 var(--acid); }
+    .tab-panel { display: none; margin-top: 18px; }
+    .tab-panel.active { display: block; animation: panel-in var(--hover) ease; }
+    @keyframes panel-in { from { opacity: 0; } to { opacity: 1; } }
 
-    .tab-panel { display: none; margin-top: 22px; animation: reveal 0.28s ease both; }
-    .tab-panel.active { display: block; }
-
-    .empty-state {
-      margin-top: 28px;
-      padding: 48px 28px;
+    .empty-state, .stale-note {
+      margin-top: 16px;
+      padding: 22px 18px;
       border: 1px dashed var(--line-2);
-      background: rgba(14, 16, 19, 0.6);
-      text-align: center;
+      color: var(--dim);
     }
-    .empty-state p { margin: 10px 0 0; color: var(--dim); max-width: 42ch; margin-inline: auto; }
-    .empty-state.compact { padding: 32px 20px; margin-top: 0; }
+    .stale-note { border-style: solid; border-color: rgba(255, 122, 69, 0.45); color: var(--heat); padding: 10px 12px; margin-top: 12px; }
+    .is-stale { opacity: 0.72; }
 
+    .verdict {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      background: var(--raised);
+    }
+    .verdict > div { padding: 18px 18px 16px; min-width: 0; }
+    .verdict > div + div { border-left: 1px solid var(--line); }
+    .verdict .accent { box-shadow: inset 3px 0 0 var(--acid); }
+    .figure {
+      font-weight: 500;
+      font-size: clamp(26px, 3vw, 38px);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-top: 12px;
+      min-height: 44px;
+      overflow-wrap: anywhere;
+    }
+    .figure.sm { font-size: clamp(18px, 2vw, 24px); min-height: 32px; }
+    .figure.xs { font-size: 14px; letter-spacing: 0; min-height: 22px; }
+    .figure.tone-review, .figure.tone-adverse { color: var(--heat); }
+    .figure.tone-up { color: var(--acid); }
+    .sub { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+    .scale { margin-top: 14px; min-height: 78px; }
+    .scale-track { position: relative; height: 36px; border-bottom: 1px solid var(--line-2); }
+    .marker {
+      position: absolute;
+      top: 0;
+      transform: translateX(-50%);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      transition: left var(--reveal) ease;
+    }
+    .marker::after {
+      content: "";
+      display: block;
+      width: 1px;
+      height: 18px;
+      margin: 4px auto 0;
+      background: currentColor;
+    }
+    .marker.ref { color: var(--dim); }
+    .marker.eff { color: var(--ink); top: 0; }
+    .marker.eff { top: -2px; }
+    .scale-gap { margin: 8px 0 0; min-height: 1.3em; font-family: "IBM Plex Mono", monospace; font-size: 13px; opacity: 0; transition: opacity 280ms ease 80ms; }
+    .scale-gap.shown { opacity: 1; }
+    .scale-gap.tone-review, .scale-gap.tone-adverse { color: var(--heat); }
+    .scale-gap.tone-up { color: var(--acid); }
+    .scale-gap.tone-neutral { color: var(--dim); }
+
+    .trace { margin-top: 16px; border: 1px solid var(--line); background: var(--sunk); }
+    .trace summary { cursor: pointer; padding: 12px 14px; color: var(--dim); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .trace ol { list-style: none; margin: 0; padding: 0 14px 12px; }
+    .trace li {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: 10px;
+      padding: 8px 0;
+      border-top: 1px solid var(--line);
+      font-size: 12.5px;
+    }
+    .trace .k { color: var(--faint); }
+    .trace .v { color: var(--ink); overflow-wrap: anywhere; }
+    .trace li.enter { animation: rise 0.4s ease both; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .cards > div { background: var(--raised); padding: 16px 18px 18px; min-width: 0; }
+    .cards.arrive > div { animation: rise 0.45s ease both; }
+    .cards.arrive > div:nth-child(2) { animation-delay: 80ms; }
+    .cards.arrive > div:nth-child(3) { animation-delay: 160ms; }
+
+    .meta {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      gap: 7px 18px;
+      font-size: 12.5px;
+      margin: 0;
+    }
+    .meta dt { color: var(--faint); }
+    .meta dd { margin: 0; overflow-wrap: anywhere; }
+    .duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+    .scroller { overflow-x: auto; }
+    .scroller::-webkit-scrollbar { height: 8px; }
+    .scroller::-webkit-scrollbar-thumb { background: var(--line-2); }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; white-space: nowrap; }
+    th {
+      text-align: left;
+      font-weight: 500;
+      color: var(--faint);
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--line-2);
+      padding: 8px 14px 8px 0;
+    }
+    td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); color: var(--dim); }
+    td:first-child { color: var(--ink); }
+    tr.requested td { color: var(--ink); background: rgba(204, 255, 51, 0.08); }
+    tr.requested td:first-child { box-shadow: inset 2px 0 0 var(--acid); padding-left: 10px; }
+    tr.incomplete td { color: var(--faint); }
+    tr.rung { animation: rise 0.4s ease both; }
+    .bar {
+      display: block;
+      height: 6px;
+      width: 0;
+      background: var(--line-2);
+      transition: width var(--reveal) ease;
+    }
+    tr.requested .bar { background: var(--acid); }
+    tr.incomplete .bar { width: 18%; background: transparent; border-bottom: 1px dashed var(--faint); }
+    .bar-cell { min-width: 120px; }
+
+    #prepare {
+      background: var(--ink);
+      color: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 14px 18px;
+    }
+    #prepare:hover:not(:disabled) { background: var(--acid); color: #0b0d10; border-color: var(--acid); }
     .action-bar {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
       align-items: center;
-      margin-top: 22px;
-      padding-top: 18px;
+      margin-top: 18px;
+      padding-top: 14px;
       border-top: 1px solid var(--line);
     }
-    #prepare.primary {
-      background: var(--ink);
-      color: var(--bg);
-      border-color: var(--ink);
+    #confirm { margin-top: 18px; border-left: 2px solid var(--acid); padding-left: 18px; }
+    .unsigned {
+      margin: 0 0 12px;
+      color: var(--ink);
+      font-size: 14px;
     }
-    #prepare.primary:hover:not(:disabled) { background: var(--acid); color: var(--bg); border-color: var(--acid); }
+    ul.warn { margin: 0; padding-left: 18px; color: var(--heat); font-size: 13px; }
 
-    /* Short viewports: the landing must not push its own button off screen. */
+    .chart-wrap { border: 1px solid var(--line); background: var(--raised); padding: 12px; margin-top: 12px; }
+    #tape-chart { width: 100%; height: auto; display: block; }
+    #tape-chart .series { fill: none; stroke: #b7bcc4; stroke-width: 1.4; }
+    #tape-chart .series.draw { animation: draw 0.6s ease forwards; }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    #tape-chart circle { cursor: pointer; }
+    #tape-chart circle:focus { stroke: var(--ink); stroke-width: 2; }
+    .period-market { color: var(--acid); fill: var(--acid); }
+    .period-extended { color: var(--amber); fill: var(--amber); }
+    .period-overnight { color: var(--night); fill: var(--night); }
+    .period-closed { color: var(--faint); fill: var(--faint); }
+    .period-unreported { color: var(--dim); fill: transparent; stroke: var(--dim); }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; }
+    .legend span { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border: 1px solid currentColor; background: currentColor; }
+    .period-unreported i { background: transparent; }
+    .readout { min-height: 2.6em; margin: 8px 0 0; color: var(--dim); font-size: 12.5px; }
+    .gap-list { margin: 8px 0 0; padding-left: 18px; color: var(--dim); font-size: 12.5px; max-height: 160px; overflow: auto; }
+    .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .facts span { border: 1px solid var(--line); background: var(--sunk); padding: 6px 8px; font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+
+    .scanning {
+      margin-top: 8px;
+      height: 28px;
+      border: 1px solid var(--line);
+      background: repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(204, 255, 51, 0.16) 12px, rgba(204, 255, 51, 0.16) 13px);
+      background-size: 200% 100%;
+      animation: scan 1.8s linear infinite;
+      color: var(--dim);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+    }
+    @keyframes scan { to { background-position: 200% 0; } }
+    .record-field { display: grid; grid-template-columns: minmax(140px, 240px) minmax(0, 1fr); gap: 8px 16px; padding: 8px 0; border-bottom: 1px solid var(--line); font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+    .record-field .k { color: var(--faint); }
+    .record-field.enter { animation: rise 0.35s ease both; }
+    .attest-map { display: grid; gap: 6px; margin-top: 14px; }
+    .attest-map div { border-left: 1px solid var(--line-2); padding: 6px 0 6px 12px; font-size: 12.5px; }
+    .attest-map strong { display: block; font-weight: 500; color: var(--faint); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; font-family: "IBM Plex Mono", monospace; }
+    footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--faint); font-size: 13px; max-width: 90ch; }
+
     @media (max-height: 780px) {
-      #gate { padding: 16px 0 18px; }
-      .gate-head { padding-bottom: 12px; }
-      .gate-body { gap: 16px; padding: 10px 0; }
-      h1 { font-size: clamp(32px, 4vw, 46px); margin-top: 6px; }
-      .lede { margin-top: 12px; font-size: 15px; }
-      .stat { padding: 14px 18px; }
-      .stat b { font-size: clamp(28px, 3.2vw, 38px); }
-      .stat p { margin-top: 7px; }
-      .stats-foot { margin-top: 8px; }
-      .gate-foot { padding-top: 14px; }
-      #enter { padding: 12px 22px; }
-    }
-
-    @media (max-height: 640px) {
-      #gate { min-height: auto; padding: 14px 0 16px; }
-      .gate-body { justify-content: flex-start; gap: 12px; padding: 6px 0; }
-      h1 { font-size: clamp(26px, 3.4vw, 36px); }
-      .lede { margin-top: 10px; font-size: 14px; max-width: 62ch; }
+      #gate { padding: 14px 0 16px; }
+      .gate-body { gap: 14px; padding: 8px 0; }
+      h1 { font-size: clamp(32px, 4vw, 46px); }
       .stat { padding: 12px 16px; }
-      .stat b { font-size: 30px; }
-      .stat p { font-size: 13px; }
-      .stats-foot { font-size: 12px; }
-      .gate-foot { padding-top: 12px; }
+      .stat b { font-size: clamp(28px, 3vw, 36px); }
+      #enter { padding: 12px 18px; }
     }
-
     @media (max-width: 880px) {
-      .console { grid-template-columns: minmax(0, 1fr) 190px; }
-      #run { grid-column: 1 / -1; border-top: 1px solid var(--line); padding: 15px; }
-      .duo { gap: 26px; }
+      .pipeline-nodes, .verdict, .cards, .duo { grid-template-columns: 1fr 1fr; }
+      .pipeline[data-state="running"] .pipeline-nodes::before { display: none; }
     }
     @media (max-width: 680px) {
-      .wrap { width: calc(100% - 32px); }
-      .stats, .verdict, .cards, .duo, .console { grid-template-columns: minmax(0, 1fr); }
-      .stat + .stat, .verdict > div + div { border-left: 0; border-top: 1px solid var(--line); }
-      .console fieldset + .field, .console .field + .field { border-left: 0; border-top: 1px solid var(--line); }
-      .meta { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
+      .wrap { width: calc(100% - 28px); }
+      .stats, .verdict, .cards, .duo, .console, .pipeline-nodes, .trace li, .record-field { grid-template-columns: 1fr; }
+      .stat + .stat, .verdict > div + div, .console fieldset + fieldset { border-left: 0; border-top: 1px solid var(--line); }
+      .meta { grid-template-columns: 1fr; }
       .meta dd { margin-bottom: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .packet { display: none; }
+      .scale-gap { opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <!-- ─────────── landing ─────────── -->
   <section id="gate">
     <div class="wrap gate-head">
       <div class="brand"><span class="logo"><img src="/meridian.png" alt="" /></span><span class="word">Meri<em>dian</em></span></div>
       <div class="tag">X Layer · chain 196 · tokenized stocks</div>
     </div>
-
     <div class="wrap gate-body">
       <div>
         <p class="tag">Pre-trade measurement</p>
         <h1>The price on the screen is not the price a sell <em>clears at</em>.</h1>
         <p class="lede">One size goes in. Meridian reads what the router would actually deliver, restates it per underlying share, and sets it next to the issuer's own reference. A blank means the read failed. Nothing here is a fair value.</p>
       </div>
-
       <div>
         <div class="stats">
           <div class="stat">
             <b>68.8<span>%</span></b>
-            <p>of volume traded outside the regular US session.</p>
+            <p>of measured volume occurred outside the regular US session.</p>
           </div>
           <div class="stat">
             <b>24.5<span>%</span></b>
-            <p>of volume traded while no venue was quoting the underlying.</p>
+            <p>of measured volume occurred while the underlying received no venue quote.</p>
           </div>
         </div>
-        <p class="stats-foot">Two separate shares of the same volume. 30-minute candles, 17 Sep 2026 13:30 UTC through 23 Sep 2026 18:30 UTC. They are not one figure.</p>
+        <p class="stats-foot">Two separate shares of the same volume. Measurement window: 30-minute candles, 17 Sep 2026 13:30 UTC through 23 Sep 2026 18:30 UTC. They are not one figure.</p>
       </div>
+      <figure class="schematic">
+        <figcaption>A large sale moving through a thin route clears at a different effective price. Schematic of the measurement. Not a live quote.</figcaption>
+        <svg viewBox="0 0 360 92" role="img" aria-label="Schematic: a large order passes a thin route and the effective price sits apart from the reference.">
+          <line class="flow" x1="8" y1="28" x2="250" y2="28" />
+          <line class="thin" x1="118" y1="28" x2="168" y2="28" />
+          <circle class="packet" cx="18" cy="28" r="3" />
+          <text x="8" y="18">LARGE SIZE</text>
+          <text x="112" y="18">THIN ROUTE</text>
+          <text x="196" y="18">USDG</text>
+          <line class="tick" x1="300" y1="22" x2="300" y2="70" />
+          <line class="tick" x1="332" y1="36" x2="332" y2="70" />
+          <text x="286" y="84">REFERENCE</text>
+          <text x="318" y="84">EFFECTIVE</text>
+        </svg>
+      </figure>
     </div>
-
     <div class="wrap gate-foot">
       <button type="button" id="enter">Open the instrument <span aria-hidden="true">→</span></button>
       <p>Meridian never signs. The page stops at a prepared quote.</p>
@@ -625,16 +729,15 @@
 
   <div id="veil" aria-hidden="true">
     <div class="wrap">
-      <p class="tag">Before a signature</p>
+      <p class="tag">Opening the instrument</p>
       <ol>
-        <li>Pick a size.</li>
-        <li>Read it live.</li>
-        <li>See what you would actually receive.</li>
+        <li>Query the route.</li>
+        <li>Normalize the units.</li>
+        <li>Read the measurement.</li>
       </ol>
     </div>
   </div>
 
-  <!-- ─────────── instrument ─────────── -->
   <div id="desk">
     <div class="topbar">
       <div class="wrap">
@@ -648,7 +751,7 @@
       <form id="check" class="console">
         <fieldset>
           <legend class="tag">Asset</legend>
-          <div class="choices">
+          <div class="choices" id="asset-choices">
             <input type="radio" name="symbol" id="asset-nvda" value="NVDAx" checked />
             <label for="asset-nvda">NVDAx</label>
             <input type="radio" name="symbol" id="asset-tsla" value="TSLAx" />
@@ -657,16 +760,46 @@
             <label for="asset-aapl">AAPLx</label>
           </div>
         </fieldset>
-        <div class="field">
-          <label class="tag" for="size">Wrapped tokens</label>
-          <input id="size" name="size" type="number" min="1" max="10000" step="1" value="10" required />
-        </div>
-        <button type="submit" id="run">Check this size</button>
+        <fieldset>
+          <legend class="tag">Wrapped tokens</legend>
+          <div class="choices" id="size-choices">
+            <input type="radio" name="size" id="size-1" value="1" />
+            <label for="size-1">1</label>
+            <input type="radio" name="size" id="size-10" value="10" checked />
+            <label for="size-10">10</label>
+            <input type="radio" name="size" id="size-50" value="50" />
+            <label for="size-50">50</label>
+            <input type="radio" name="size" id="size-200" value="200" />
+            <label for="size-200">200</label>
+            <input type="radio" name="size" id="size-500" value="500" />
+            <label for="size-500">500</label>
+            <input type="radio" name="size" id="size-1000" value="1000" />
+            <label for="size-1000">1000</label>
+          </div>
+        </fieldset>
       </form>
-      <p id="status">Nothing is on the tape until a live reading returns.</p>
-    </div>
+      <p id="status" role="status">Nothing is measured until a live reading returns.</p>
 
-    <main class="wrap app-main">
+      <section id="pipeline" class="pipeline" data-state="idle" aria-labelledby="pipeline-label">
+        <div class="pipeline-top">
+          <div>
+            <p class="tag">Measurement pipeline</p>
+            <p id="pipeline-label">A measurement queries a live X Layer route, then normalizes the units.</p>
+          </div>
+        </div>
+        <ol class="pipeline-nodes">
+          <li class="node" data-stage="route" data-state="idle"><span class="mark" aria-hidden="true"></span><span class="name">Query route</span><span class="detail">Wrapped token into USDG, at the selected size.</span></li>
+          <li class="node" data-stage="norm" data-state="idle"><span class="mark" aria-hidden="true"></span><span class="name">Normalize units</span><span class="detail">Wrapper ratio and USDG/USD.</span></li>
+          <li class="node" data-stage="compare" data-state="idle"><span class="mark" aria-hidden="true"></span><span class="name">Compare reference</span><span class="detail">Issuer period and reference.</span></li>
+          <li class="node" data-stage="ready" data-state="idle"><span class="mark" aria-hidden="true"></span><span class="name">Measurement ready</span><span class="detail">USD per underlying share.</span></li>
+        </ol>
+        <div id="quote-route" class="quote-route" aria-label="Route"></div>
+        <div class="measure-row">
+          <button type="submit" id="run" form="check">Check this size</button>
+          <p id="run-caption"></p>
+        </div>
+      </section>
+
       <div id="tape-bar" class="tape-bar hidden" aria-live="polite">
         <span class="pill live" id="hud-live">Live</span>
         <span class="pill" id="hud-symbol">—</span>
@@ -677,62 +810,81 @@
       </div>
 
       <nav id="app-nav" class="app-nav" role="tablist" aria-label="Instrument views">
-        <button type="button" role="tab" id="tab-reading" data-tab="reading" class="active" aria-selected="true">Reading</button>
-        <button type="button" role="tab" id="tab-depth" data-tab="depth" aria-selected="false">Depth</button>
-        <button type="button" role="tab" id="tab-tape" data-tab="tape" aria-selected="false">Tape</button>
-        <button type="button" role="tab" id="tab-chain" data-tab="chain" aria-selected="false">Chain</button>
+        <button type="button" role="tab" id="tab-reading" data-tab="reading" class="active" aria-selected="true" tabindex="0">Reading</button>
+        <button type="button" role="tab" id="tab-depth" data-tab="depth" aria-selected="false" tabindex="-1">Depth</button>
+        <button type="button" role="tab" id="tab-tape" data-tab="tape" aria-selected="false" tabindex="-1">Tape</button>
+        <button type="button" role="tab" id="tab-chain" data-tab="chain" aria-selected="false" tabindex="-1">Chain</button>
       </nav>
+    </div>
 
-      <div id="panel-reading" class="tab-panel active" role="tabpanel">
+    <main class="wrap app-main">
+      <div id="panel-reading" class="tab-panel active" role="tabpanel" aria-labelledby="tab-reading">
         <div id="empty-state" class="empty-state">
           <p class="tag">No reading yet</p>
-          <p>Choose an asset and size in the console, then run <strong>Check this size</strong>. The verdict appears here.</p>
+          <p>Choose an asset and a size, then check it. The button requests a fresh router quote. Nothing is signed.</p>
         </div>
+        <p id="stale-note" class="stale-note hidden">This reading does not match the selected asset and size.</p>
         <div id="results" class="hidden">
-        <section>
-          <h2>This size against the issuer reference</h2>
-          <p class="note reason hidden" id="withheld"></p>
-          <div class="verdict" id="comparison">
-            <div class="accent">
-              <div class="tag">Effective · USD per underlying share</div>
-              <div class="figure" id="effective"></div>
-              <p class="reason hidden" id="effective-reason"></p>
-              <p class="note">Fees and route impact included. Not a fair value.</p>
-            </div>
-            <div>
-              <div class="tag">Issuer reference · USD per share</div>
-              <div class="figure" id="reference"></div>
-              <p class="reason hidden" id="reference-reason"></p>
-              <p class="note" id="reference-meta"></p>
-            </div>
-            <div>
-              <div class="tag" id="gap-size-label">Gap at requested size</div>
-              <div class="figure" id="gap-size"></div>
-              <p class="reason hidden" id="gap-size-reason"></p>
-              <div class="sub">
-                <div class="tag" id="gap-min-label">Gap at smallest size</div>
-                <div class="figure sm" id="gap-min"></div>
-                <p class="reason hidden" id="gap-min-reason"></p>
+          <section>
+            <h2>This size against the issuer reference</h2>
+            <p class="note reason hidden" id="withheld"></p>
+            <div class="verdict" id="comparison">
+              <div class="accent">
+                <div class="tag">Effective · USD per underlying share</div>
+                <div class="figure" id="effective"></div>
+                <p class="reason hidden" id="effective-reason"></p>
+                <p class="note">Fees and route impact included. Not a fair value.</p>
               </div>
-              <p class="note hidden" id="same-size"></p>
+              <div>
+                <div class="tag">Issuer reference · USD per share</div>
+                <div class="figure" id="reference"></div>
+                <p class="reason hidden" id="reference-reason"></p>
+                <p class="note" id="reference-meta"></p>
+              </div>
+              <div>
+                <div class="tag" id="gap-size-label">Gap at requested size</div>
+                <div class="figure" id="gap-size"></div>
+                <p class="reason hidden" id="gap-size-reason"></p>
+                <div class="scale" id="reference-scale" hidden>
+                  <div class="scale-track">
+                    <span class="marker ref" id="marker-ref">Reference</span>
+                    <span class="marker eff" id="marker-eff">Router</span>
+                  </div>
+                  <p class="scale-gap" id="scale-gap"></p>
+                </div>
+                <div class="sub">
+                  <div class="tag" id="gap-min-label">Gap at smallest size</div>
+                  <div class="figure sm" id="gap-min"></div>
+                  <p class="reason hidden" id="gap-min-reason"></p>
+                </div>
+                <p class="note hidden" id="same-size"></p>
+              </div>
             </div>
+            <details class="trace" id="trace">
+              <summary>Calculation trace</summary>
+              <ol>
+                <li id="trace-1"><span class="k">Router output ÷ wrapped amount</span><span class="v"></span></li>
+                <li id="trace-2"><span class="k">Wrapper normalization</span><span class="v"></span></li>
+                <li id="trace-3"><span class="k">USDG/USD conversion</span><span class="v"></span></li>
+                <li id="trace-4"><span class="k">USD per share</span><span class="v"></span></li>
+              </ol>
+            </details>
+          </section>
+          <div class="action-bar">
+            <button type="button" id="prepare" class="hidden">Prepare trade parameters</button>
+            <p class="note" style="margin:0">A second quote. Nothing is signed or submitted on this page.</p>
           </div>
-        </section>
-
-        <div class="action-bar">
-          <button type="button" id="prepare" class="hidden primary">Prepare this trade</button>
-          <p class="note" style="margin:0">Fresh quote only. Nothing is signed on this page.</p>
-        </div>
-        <div id="confirm" class="hidden" style="margin-top:22px;border-left:2px solid var(--acid);padding-left:22px">
+          <div id="confirm" class="hidden">
+            <p class="unsigned" id="prep-unsigned">No transaction has been signed or submitted.</p>
             <p class="note" id="confirm-state" style="margin-top:0"></p>
-            <div class="cards" style="margin-top:14px">
+            <div class="cards" id="prep-cards">
               <div>
                 <div class="tag">Effective · USD per underlying share</div>
                 <div class="figure sm" id="prep-effective"></div>
                 <p class="reason hidden" id="prep-effective-reason"></p>
               </div>
               <div>
-                <div class="tag">Minimum received</div>
+                <div class="tag">Prepared parameter · minimum received</div>
                 <div class="figure sm" id="prep-min"></div>
                 <p class="reason hidden" id="prep-min-reason"></p>
                 <p class="note" id="prep-units"></p>
@@ -742,206 +894,257 @@
                 <div class="figure sm" id="prep-gap"></div>
                 <p class="reason hidden" id="prep-gap-reason"></p>
                 <div class="sub">
-                  <div class="tag">Deadline</div>
+                  <div class="tag">Prepared parameter · deadline</div>
                   <div class="figure xs mono" id="prep-deadline"></div>
+                  <p class="note">Displayed from the fresh quote. Not passed to a router. Not active protection.</p>
                 </div>
               </div>
             </div>
             <dl class="meta" id="prep-move" style="margin-top:18px"></dl>
             <p class="note" id="prep-notice"></p>
-            <p class="note" id="prep-protection"></p>
-        </div>
+          </div>
         </div>
       </div>
 
-      <div id="panel-depth" class="tab-panel" role="tabpanel">
-        <div id="depth-empty" class="empty-state compact">
+      <div id="panel-depth" class="tab-panel" role="tabpanel" aria-labelledby="tab-depth" hidden>
+        <div id="depth-empty" class="empty-state">
           <p class="tag">Depth locked</p>
-          <p>Run a reading on the Reading tab first. Ladder, pools, and index data load from that sample.</p>
+          <p>Run a reading first. The ladder is filled from the quotes that reading returns.</p>
         </div>
+        <p id="depth-stale" class="stale-note hidden">This ladder does not match the selected asset and size.</p>
         <div id="depth-body" class="hidden">
-        <div class="duo">
+          <div class="duo">
+            <section>
+              <h2>Issuer session</h2>
+              <dl class="meta" id="session"></dl>
+              <p class="note" id="local-session"></p>
+            </section>
+            <section>
+              <h2 id="parity-heading">Quote-token parity</h2>
+              <dl class="meta" id="parity"></dl>
+              <p class="reason hidden" id="parity-extra"></p>
+            </section>
+          </div>
           <section>
-            <h2>Issuer session</h2>
-            <dl class="meta" id="session"></dl>
-            <p class="note" id="local-session"></p>
+            <h2>Execution quote ladder</h2>
+            <p class="note" style="margin-top:0">Quote impact by size. Size-dependent effective price. Not realised slippage.</p>
+            <div id="depth-route" class="quote-route"></div>
+            <div class="scroller">
+              <table>
+                <thead id="ladder-head"></thead>
+                <tbody id="ladder"></tbody>
+              </table>
+            </div>
+            <p class="note" id="ladder-note"></p>
           </section>
           <section>
-            <h2 id="parity-heading">Quote-token parity</h2>
-            <dl class="meta" id="parity"></dl>
-            <p class="reason hidden" id="parity-extra"></p>
+            <h2>OKX market price and market index</h2>
+            <div class="cards" id="index-cards">
+              <div>
+                <div class="tag">market price</div>
+                <div class="figure sm" id="market"></div>
+                <p class="reason hidden" id="market-reason"></p>
+              </div>
+              <div>
+                <div class="tag">market index</div>
+                <div class="figure sm" id="index"></div>
+                <p class="reason hidden" id="index-reason"></p>
+              </div>
+              <div>
+                <div class="tag">Observed difference</div>
+                <div class="figure sm" id="divergence"></div>
+                <p class="reason hidden" id="divergence-reason"></p>
+              </div>
+            </div>
+            <p class="note" id="index-note"></p>
+            <div class="scroller">
+              <table>
+                <thead>
+                  <tr><th>Control</th><th>market price</th><th>market index</th><th>divergence</th><th></th></tr>
+                </thead>
+                <tbody id="controls"></tbody>
+              </table>
+            </div>
+            <p class="note" id="controls-note"></p>
           </section>
-        </div>
-
-        <section>
-          <h2>Size ladder</h2>
-          <div class="scroller">
-            <table>
-              <thead id="ladder-head"></thead>
-              <tbody id="ladder"></tbody>
-            </table>
-          </div>
-          <p class="note">Route at the requested size: <span id="route" class="mono"></span></p>
-          <p class="note" id="ladder-note"></p>
-        </section>
-
-        <section>
-          <h2>OKX market price and market index</h2>
-          <div class="cards">
-            <div>
-              <div class="tag">market price</div>
-              <div class="figure sm" id="market"></div>
-              <p class="reason hidden" id="market-reason"></p>
+          <section>
+            <h2>Pools</h2>
+            <dl class="meta" id="pools-summary"></dl>
+            <div class="scroller">
+              <table>
+                <thead id="pool-head"></thead>
+                <tbody id="pools"></tbody>
+              </table>
             </div>
-            <div>
-              <div class="tag">market index</div>
-              <div class="figure sm" id="index"></div>
-              <p class="reason hidden" id="index-reason"></p>
-            </div>
-            <div>
-              <div class="tag">divergence</div>
-              <div class="figure sm" id="divergence"></div>
-              <p class="reason hidden" id="divergence-reason"></p>
-            </div>
-          </div>
-          <p class="note" id="index-note"></p>
-          <div class="scroller">
-            <table>
-              <thead>
-                <tr><th>Control</th><th>market price</th><th>market index</th><th>divergence</th><th></th></tr>
-              </thead>
-              <tbody id="controls"></tbody>
-            </table>
-          </div>
-          <p class="note" id="controls-note"></p>
-        </section>
-
-        <section>
-          <h2>Pools</h2>
-          <dl class="meta" id="pools-summary"></dl>
-          <div class="scroller">
-            <table>
-              <thead id="pool-head"></thead>
-              <tbody id="pools"></tbody>
-            </table>
-          </div>
-          <p class="note" id="pool-note"></p>
-        </section>
-
-        <section id="warnings-section" class="hidden">
-          <h2>Warnings</h2>
-          <ul id="warnings" class="warn"></ul>
-        </section>
-
-        <section>
-          <h2>Provenance</h2>
-          <dl class="meta" id="provenance"></dl>
-        </section>
+            <p class="note" id="pool-note"></p>
+          </section>
+          <section id="warnings-section" class="hidden">
+            <h2>Warnings</h2>
+            <ul id="warnings" class="warn"></ul>
+          </section>
+          <section>
+            <h2>Provenance</h2>
+            <dl class="meta" id="provenance"></dl>
+          </section>
         </div>
       </div>
 
-      <div id="panel-tape" class="tab-panel" role="tabpanel">
-      <section id="series-section">
-        <h2>Recorded series</h2>
-        <p class="note" id="series-window" style="margin-top:0">Loading the recorded readings.</p>
-        <p class="note" id="series-regimes"></p>
-        <p class="note" id="series-claim"></p>
-        <div class="scroller" style="margin-top:16px">
-          <table>
-            <thead id="series-head"></thead>
-            <tbody id="series-rows"></tbody>
-          </table>
-        </div>
-      </section>
+      <div id="panel-tape" class="tab-panel" role="tabpanel" aria-labelledby="tab-tape" hidden>
+        <section>
+          <h2>Recorded series</h2>
+          <p class="note" id="series-window" style="margin-top:0">Loading the recorded readings.</p>
+          <div class="facts" id="series-facts"></div>
+          <p class="note" id="series-coverage"></p>
+          <ul class="gap-list hidden" id="series-gaps"></ul>
+          <p class="note" id="series-regimes"></p>
+          <p class="note" id="series-claim"></p>
+          <div class="legend" aria-hidden="true">
+            <span class="period-market"><i></i>market</span>
+            <span class="period-extended"><i></i>extended</span>
+            <span class="period-overnight"><i></i>overnight</span>
+            <span class="period-closed"><i></i>closed</span>
+            <span class="period-unreported"><i></i>unreported</span>
+          </div>
+          <div class="chart-wrap">
+            <svg id="tape-chart" viewBox="0 0 720 220" role="img" aria-label="Recorded gaps. Missing readings are not drawn."></svg>
+            <p id="tape-readout" class="readout">Select a stored point to read its source values.</p>
+          </div>
+          <div class="scroller" style="margin-top:16px">
+            <table>
+              <thead id="series-head"></thead>
+              <tbody id="series-rows"></tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
-      <div id="panel-chain" class="tab-panel" role="tabpanel">
-      <section id="record-section">
-        <h2>On-chain record</h2>
-        <p class="note" id="record-claim" style="margin-top:0">Loading the record from X Layer.</p>
-        <p class="reason hidden" id="record-reason"></p>
-        <dl class="meta" id="record-meta" style="margin-top:16px"></dl>
-      </section>
+      <div id="panel-chain" class="tab-panel" role="tabpanel" aria-labelledby="tab-chain" hidden>
+        <section>
+          <h2>On-chain record</h2>
+          <p class="note" id="record-claim" style="margin-top:0">Loading the record from X Layer.</p>
+          <div id="chain-scan" class="scanning hidden">Reading the measurement from X Layer.</div>
+          <p class="reason hidden" id="record-reason"></p>
+          <div class="attest-map" id="attest-map" hidden></div>
+          <div id="record-fields" style="margin-top:16px"></div>
+          <p class="note" id="record-writer">The sampler does not write this contract. This page does not write it. The attestation was not created by a wallet connected here.</p>
+        </section>
       </div>
 
       <footer>
-        Meridian shows measured prices and the source each one came from. It does not compute a fair value. A difference from the issuer reference is a measurement, not protection. This page does not submit a trade. The only on-chain protections on a trade are the minimum amount received and the deadline, and both are parameters of the router call, not of this screen.
+        Meridian shows measured prices and the source each one came from. It does not compute a fair value. A difference from the issuer reference is a measurement, not protection. No transaction is signed or submitted on this page. Minimum received and the deadline, when shown, are prepared parameters. They are not passed to a router.
       </footer>
     </main>
   </div>
 
   <script>
+    const LADDER = [1, 10, 50, 200, 500, 1000];
+    const GAP_MS = 6 * 60 * 1000;
+    const ATTESTOR = "0x6A495d0598033c8372D457594ee60f469dEe7FBf";
+    const MEASUREMENT_ZERO_TX = "0x21ede576237fb4b63f712b7f0b77f5f4479e29e21c5899e0716b837cb01acb95";
+    const CLAIM = "This record proves what Meridian declared. It does not prove that the price was correct.";
     const form = document.getElementById("check");
     const status = document.getElementById("status");
     const results = document.getElementById("results");
     const button = document.getElementById("run");
+    const pipeline = document.getElementById("pipeline");
+    const metricTokens = new WeakMap();
+    let panelGeneration = 0;
+    let measuring = false;
+    let tabPinned = false;
+    let hasReading = false;
+    let readingKey = "";
+    let seriesBody = null;
+    let chartAnimatedSig = "";
+    let recordBody = null;
 
+    function reduceMotion() {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+    function selection() {
+      const data = new FormData(form);
+      return { symbol: String(data.get("symbol") || "NVDAx"), size: String(data.get("size") || "10") };
+    }
+    function keyOf(symbol, size) { return symbol + ":" + size; }
     function setStatus(text, state) {
       status.textContent = text;
-      status.classList.remove("busy", "error", "done");
+      status.classList.remove("busy", "error", "done", "stale");
       if (state) status.classList.add(state);
     }
-
-    function reveal(node) {
-      node.classList.remove("reveal");
-      void node.offsetWidth;
-      node.classList.add("reveal");
+    function parseNum(text) {
+      if (!text || text === "—") return null;
+      const cleaned = String(text).replaceAll("−", "-").replaceAll(",", "").replace(/[^0-9.+-]/g, "");
+      if (!cleaned || cleaned === "-" || cleaned === "+" || cleaned === ".") return null;
+      const value = Number(cleaned);
+      return Number.isFinite(value) ? value : null;
     }
-
-    function enterInstrument() {
-      if (document.body.classList.contains("entered")) return;
-      document.body.classList.add("opening");
-      window.setTimeout(() => {
-        document.body.classList.remove("opening");
-        document.body.classList.add("entered");
-        history.replaceState(null, "", "#instrument");
-      }, 1400);
+    function gapTone(text) {
+      const value = parseNum(text);
+      if (value === null) return "tone-neutral";
+      if (value < 0) return "tone-adverse";
+      if (value > 0) return "tone-up";
+      return "tone-neutral";
     }
-
-    document.getElementById("enter").addEventListener("click", enterInstrument);
-    function leaveInstrument() {
-      document.body.classList.remove("entered");
-      history.replaceState(null, "", location.pathname);
-      window.scrollTo(0, 0);
-    }
-
-    document.getElementById("leave").addEventListener("click", leaveInstrument);
-    document.getElementById("home").addEventListener("click", leaveInstrument);
-    if (location.hash === "#instrument") document.body.classList.add("entered");
-
-    function setTab(name) {
-      for (const button of document.querySelectorAll(".app-nav button")) {
-        const on = button.dataset.tab === name;
-        button.classList.toggle("active", on);
-        button.setAttribute("aria-selected", on ? "true" : "false");
+    function animateMetric(node, text) {
+      const token = {};
+      metricTokens.set(node, token);
+      node.setAttribute("aria-label", text);
+      const target = parseNum(text);
+      const textual = /[A-Za-z]/.test(String(text).replace("%", ""));
+      if (reduceMotion() || target === null || textual) {
+        node.textContent = text;
+        return;
       }
-      for (const panel of document.querySelectorAll(".tab-panel")) {
-        const on =
-          (panel.id === "panel-reading" && name === "reading") ||
-          (panel.id === "panel-depth" && name === "depth") ||
-          (panel.id === "panel-tape" && name === "tape") ||
-          (panel.id === "panel-chain" && name === "chain");
-        panel.classList.toggle("active", on);
-      }
+      const digits = ((String(text).split(".")[1] || "").replace(/\D/g, "")).length;
+      const signed = String(text).trim().startsWith("+");
+      const started = performance.now();
+      const frame = (now) => {
+        if (metricTokens.get(node) !== token) return;
+        const progress = Math.min(1, (now - started) / 520);
+        if (progress < 1) {
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const current = target * eased;
+          const body = current.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+          const prefix = signed && current >= 0 ? "+" : "";
+          node.textContent = prefix + body + (String(text).trim().endsWith("%") ? "%" : "");
+          requestAnimationFrame(frame);
+        } else node.textContent = text;
+      };
+      requestAnimationFrame(frame);
     }
-
-    for (const button of document.querySelectorAll(".app-nav button")) {
-      button.addEventListener("click", () => setTab(button.dataset.tab ?? "reading"));
-    }
-
-    function field(id, value) {
+    function field(id, value, opts = {}) {
       const node = document.getElementById(id);
       const reason = document.getElementById(id + "-reason");
-      const text = value.text ?? "";
-      node.textContent = text;
-      node.classList.toggle("down", text.startsWith("-") || text.startsWith("−"));
-      node.classList.toggle("up", text.startsWith("+"));
+      const text = value?.text ?? "";
+      node.classList.remove("tone-neutral", "tone-review", "tone-adverse", "tone-up");
+      if (opts.tone) node.classList.add(gapTone(text));
+      if (opts.animate) animateMetric(node, text);
+      else node.textContent = text;
       if (reason) {
-        reason.textContent = value.reason ?? "";
-        reason.classList.toggle("hidden", !value.reason);
+        reason.textContent = value?.reason ?? "";
+        reason.classList.toggle("hidden", !value?.reason);
       }
     }
-
+    function definition(id, pairs) {
+      const list = document.getElementById(id);
+      list.replaceChildren();
+      for (const [term, text] of pairs) {
+        const dt = document.createElement("dt");
+        dt.textContent = term;
+        const dd = document.createElement("dd");
+        dd.textContent = text;
+        list.append(dt, dd);
+      }
+    }
+    function head(id, labels) {
+      const thead = document.getElementById(id);
+      const tr = document.createElement("tr");
+      for (const label of labels) {
+        const th = document.createElement("th");
+        th.textContent = label;
+        tr.appendChild(th);
+      }
+      thead.replaceChildren(tr);
+    }
     function rows(id, items) {
       const body = document.getElementById(id);
       body.replaceChildren();
@@ -956,49 +1159,272 @@
         body.appendChild(tr);
       }
     }
-
-    function head(id, labels) {
-      const thead = document.getElementById(id);
-      const tr = document.createElement("tr");
-      for (const label of labels) {
-        const th = document.createElement("th");
-        th.textContent = label;
-        tr.appendChild(th);
-      }
-      thead.replaceChildren(tr);
+    function stageNode(name) {
+      return pipeline.querySelector('[data-stage="' + name + '"]');
     }
-
-    function definition(id, pairs) {
-      const list = document.getElementById(id);
-      list.replaceChildren();
-      for (const [term, text] of pairs) {
-        const dt = document.createElement("dt");
-        dt.textContent = term;
-        const dd = document.createElement("dd");
-        dd.textContent = text;
-        list.append(dt, dd);
+    function setStage(name, state, detail) {
+      const node = stageNode(name);
+      node.dataset.state = state;
+      node.querySelector(".detail").textContent = detail;
+    }
+    function renderRoute(target, parts, pending) {
+      target.replaceChildren();
+      parts.forEach((part, index) => {
+        if (index > 0) {
+          const arrow = document.createElement("span");
+          arrow.className = "route-arrow";
+          arrow.textContent = "→";
+          target.append(arrow);
+        }
+        const chip = document.createElement("span");
+        chip.className = "route-chip" + (pending ? " pending" : "") + (part.fail ? " fail" : "");
+        chip.textContent = part.label || part;
+        target.append(chip);
+      });
+    }
+    function refreshCaption() {
+      const { symbol, size } = selection();
+      document.getElementById("run-caption").textContent =
+        "Requests a fresh router quote for " + size + " wrapped " + symbol + " into USDG. Nothing is signed or submitted.";
+    }
+    function markStale() {
+      if (!hasReading) {
+        refreshCaption();
+        return;
+      }
+      const { symbol, size } = selection();
+      const stale = keyOf(symbol, size) !== readingKey;
+      document.getElementById("stale-note").classList.toggle("hidden", !stale);
+      document.getElementById("depth-stale").classList.toggle("hidden", !stale);
+      results.classList.toggle("is-stale", stale);
+      document.getElementById("depth-body").classList.toggle("is-stale", stale);
+      if (stale && !measuring) {
+        button.textContent = "Request a fresh measurement";
+        setStatus("Previous reading is stale. The next check requests a fresh measurement.", "stale");
+      }
+      refreshCaption();
+    }
+    function setPipelineRunning(symbol, size) {
+      pipeline.dataset.state = "running";
+      document.getElementById("pipeline-label").textContent = "Requesting router quote";
+      setStage("route", "active", "Requesting router quote · " + size + " wrapped " + symbol + " → USDG");
+      setStage("norm", "wait", "Reading wrapper ratio. Converting USDG to USD.");
+      setStage("compare", "wait", "Comparing issuer reference.");
+      setStage("ready", "wait", "Waiting for the measured price.");
+      renderRoute(document.getElementById("quote-route"), [
+        size + " wrapped " + symbol,
+        "router",
+        "USDG",
+        "USD / share",
+      ], true);
+      button.classList.add("is-live");
+      button.textContent = "Requesting router quote";
+    }
+    function setPipelineError(message) {
+      pipeline.dataset.state = "error";
+      document.getElementById("pipeline-label").textContent = "The measurement stopped.";
+      setStage("route", "fail", message);
+      setStage("norm", "stopped", "Stopped. The quote request did not return.");
+      setStage("compare", "stopped", "Stopped.");
+      setStage("ready", "stopped", "No effective price was produced.");
+      renderRoute(document.getElementById("quote-route"), [{ label: message, fail: true }], false);
+      button.classList.remove("is-live");
+      button.textContent = "Check this size";
+    }
+    function classify(view) {
+      const requested = (view.ladder || []).find((row) => row.requested);
+      const route = requested
+        ? { state: "done", detail: view.requestedRoute && view.requestedRoute !== "—" ? view.requestedRoute : "Router returned a quote for this size." }
+        : { state: "fail", detail: view.effectiveUsd?.reason || "The router did not return a quote for this size." };
+      const wrapBad = view.normalizationStatus !== "verified" || Boolean(view.wrapRate?.reason);
+      const parityBad = Boolean(view.quoteTokenParity?.reason);
+      let norm;
+      if (route.state !== "done") norm = { state: "stopped", detail: "Stopped. No router quote to normalize." };
+      else if (wrapBad) norm = { state: "fail", detail: view.wrapRate?.reason || "The wrapper ratio was not read." };
+      else if (parityBad) norm = { state: "fail", detail: view.quoteTokenParity.reason };
+      else norm = { state: "done", detail: view.wrapRate.text + ". USDG/USD " + view.quoteTokenParity.text + "." };
+      let compare;
+      if (norm.state !== "done") compare = { state: "stopped", detail: "Stopped. Normalization did not complete." };
+      else if (view.comparisonHidden || view.referencePrice?.text === "—" || view.referencePrice?.reason) {
+        compare = { state: "fail", detail: view.comparisonHiddenReason || view.referencePrice?.reason || "The issuer reference was not read." };
+      } else if (view.gapAtRequestedSize?.reason) compare = { state: "fail", detail: view.gapAtRequestedSize.reason };
+      else compare = { state: "done", detail: "Issuer period " + view.issuerPeriod.text + ". Reference " + view.referencePrice.text + "." };
+      let ready;
+      if (compare.state !== "done") ready = { state: "stopped", detail: view.effectiveUsd?.reason || "Effective USD per share was not produced." };
+      else if (view.effectiveUsd?.reason || view.effectiveUsd?.text === "—") ready = { state: "fail", detail: view.effectiveUsd?.reason || "Effective USD per share is missing." };
+      else ready = { state: "done", detail: view.effectiveUsd.text + " USD per underlying share." };
+      return { route, norm, compare, ready };
+    }
+    function setPipelineResult(view) {
+      const stages = classify(view);
+      pipeline.dataset.state = stages.ready.state === "done" ? "done" : "error";
+      setStage("route", stages.route.state, stages.route.detail);
+      setStage("norm", stages.norm.state, stages.norm.detail);
+      setStage("compare", stages.compare.state, stages.compare.detail);
+      setStage("ready", stages.ready.state, stages.ready.detail);
+      const failed = [stages.route, stages.norm, stages.compare, stages.ready].find((stage) => stage.state === "fail");
+      document.getElementById("pipeline-label").textContent = stages.ready.state === "done"
+        ? "Measurement ready"
+        : (failed ? failed.detail : "The measurement stopped.");
+      const routeName = view.requestedRoute && view.requestedRoute !== "—" ? view.requestedRoute : "route not returned";
+      const routeFailed = stages.route.state !== "done";
+      renderRoute(document.getElementById("quote-route"), [
+        { label: (view.requestedSizeLabel || "").split(" ")[0] + " wrapped " + view.symbol, fail: routeFailed },
+        { label: routeName, fail: routeFailed || routeName === "route not returned" },
+        { label: view.quoteTokenSymbol || "USDG", fail: Boolean(view.quoteTokenParity?.reason) },
+        { label: stages.ready.state === "done" ? view.effectiveUsd.text + " USD / share" : "USD / share", fail: stages.ready.state !== "done" },
+      ], false);
+      renderRoute(document.getElementById("depth-route"), [
+        view.symbol + " wrapped",
+        routeName,
+        view.quoteTokenSymbol || "USDG",
+        "USD / share",
+      ], false);
+      button.classList.remove("is-live");
+      button.textContent = "Check this size";
+    }
+    function placeScale(effText, refText, gapText) {
+      const scale = document.getElementById("reference-scale");
+      const eff = parseNum(effText);
+      const ref = parseNum(refText);
+      if (eff === null || ref === null) {
+        scale.hidden = true;
+        return;
+      }
+      scale.hidden = false;
+      const low = Math.min(eff, ref);
+      const high = Math.max(eff, ref);
+      const span = high - low || Math.abs(low) * 0.01 || 1;
+      const min = low - span * 0.45;
+      const max = high + span * 0.45;
+      const pos = (value) => ((value - min) / (max - min)) * 100;
+      const effEl = document.getElementById("marker-eff");
+      const refEl = document.getElementById("marker-ref");
+      const gapEl = document.getElementById("scale-gap");
+      gapEl.textContent = gapText;
+      gapEl.className = "scale-gap " + gapTone(gapText);
+      const apply = () => {
+        effEl.style.left = pos(eff) + "%";
+        refEl.style.left = pos(ref) + "%";
+        gapEl.classList.add("shown");
+      };
+      if (reduceMotion()) apply();
+      else {
+        effEl.style.left = "50%";
+        refEl.style.left = "50%";
+        gapEl.classList.remove("shown");
+        requestAnimationFrame(() => requestAnimationFrame(apply));
       }
     }
-
+    function fillTrace(view) {
+      const requested = (view.ladder || []).find((row) => row.requested);
+      const steps = [
+        requested ? requested.cells[2] : (view.effectiveUsd?.reason || "—"),
+        view.wrapRate?.reason ? view.wrapRate.reason : view.wrapRate?.text,
+        view.quoteTokenParity?.reason ? view.quoteTokenParity.reason : (view.quoteTokenParity?.text + " USD per " + view.quoteTokenSymbol),
+        view.effectiveUsd?.reason ? view.effectiveUsd.reason : view.effectiveUsd?.text,
+      ];
+      steps.forEach((text, index) => {
+        const li = document.getElementById("trace-" + (index + 1));
+        li.querySelector(".v").textContent = text || "—";
+        li.classList.remove("enter");
+        if (!reduceMotion()) {
+          void li.offsetWidth;
+          li.style.animationDelay = (index * 80) + "ms";
+          li.classList.add("enter");
+        }
+      });
+    }
+    function renderLadder(view) {
+      const sizes = LADDER.slice();
+      const requestedSize = Number(selection().size);
+      if (Number.isFinite(requestedSize) && !sizes.includes(requestedSize)) sizes.push(requestedSize);
+      sizes.sort((a, b) => a - b);
+      const bySize = new Map();
+      for (const row of view.ladder || []) bySize.set(Number(row.cells[0]), row);
+      const prices = sizes.map((size) => bySize.get(size)).map((row) => row ? parseNum(row.cells[3]) : null).filter((value) => value !== null);
+      const best = prices.length ? Math.max(...prices) : null;
+      const worst = prices.length ? Math.min(...prices) : null;
+      head("ladder-head", (view.ladderHeaders || []).concat(["Quote impact by size"]));
+      const body = document.getElementById("ladder");
+      body.replaceChildren();
+      sizes.forEach((size, index) => {
+        const source = bySize.get(size);
+        const tr = document.createElement("tr");
+        tr.classList.add("rung");
+        if (!reduceMotion()) tr.style.animationDelay = (index * 60) + "ms";
+        if (!source) {
+          tr.classList.add("incomplete");
+          const cells = [String(size), "—", "—", "—", "—"];
+          for (const text of cells) {
+            const td = document.createElement("td");
+            td.textContent = text;
+            tr.appendChild(td);
+          }
+          const td = document.createElement("td");
+          td.className = "bar-cell";
+          td.textContent = "The router did not return a quote for this size.";
+          const bar = document.createElement("span");
+          bar.className = "bar";
+          td.appendChild(bar);
+          tr.appendChild(td);
+          body.appendChild(tr);
+          return;
+        }
+        if (source.requested) tr.classList.add("requested");
+        source.cells.forEach((text) => {
+          const td = document.createElement("td");
+          td.textContent = text;
+          tr.appendChild(td);
+        });
+        const td = document.createElement("td");
+        td.className = "bar-cell";
+        const price = parseNum(source.cells[3]);
+        const bar = document.createElement("span");
+        bar.className = "bar";
+        td.appendChild(bar);
+        if (price === null || best === null) {
+          td.append(document.createTextNode(view.quoteTokenParity?.reason || view.wrapRate?.reason || "USD per share was not returned for this size."));
+          bar.classList.add("incomplete");
+        }
+        tr.appendChild(td);
+        body.appendChild(tr);
+        if (price !== null && best !== null && worst !== null) {
+          const span = best - worst;
+          const width = span === 0 ? 8 : ((best - price) / span) * 100;
+          requestAnimationFrame(() => { bar.style.width = Math.max(width, span === 0 ? 8 : 2) + "%"; });
+        }
+      });
+    }
+    function periodClass(period) {
+      const name = String(period || "").toLowerCase();
+      if (name === "market" || name === "regular") return "period-market";
+      if (name === "extended") return "period-extended";
+      if (name === "overnight") return "period-overnight";
+      if (name === "closed") return "period-closed";
+      return "period-unreported";
+    }
     function show(view) {
       document.getElementById("empty-state").classList.add("hidden");
       document.getElementById("depth-empty").classList.add("hidden");
       document.getElementById("depth-body").classList.remove("hidden");
-      results.classList.remove("hidden");
-      setTab("reading");
+      document.getElementById("stale-note").classList.add("hidden");
+      document.getElementById("depth-stale").classList.add("hidden");
+      results.classList.remove("hidden", "is-stale");
+      document.getElementById("depth-body").classList.remove("is-stale");
+      hasReading = true;
+      readingKey = keyOf(view.symbol, String(view.requestedSizeLabel || "").split(" ")[0] || selection().size);
+      if (!tabPinned) setTab("reading");
+      setPipelineResult(view);
 
-      const size = String(new FormData(form).get("size") ?? "");
       const bar = document.getElementById("tape-bar");
       bar.classList.remove("hidden");
       document.getElementById("hud-symbol").textContent = view.symbol;
-      document.getElementById("hud-size").textContent = size + " wrapped";
+      document.getElementById("hud-size").textContent = selection().size + " wrapped";
       document.getElementById("hud-effective").textContent = "Eff " + view.effectiveUsd.text;
       const gapHud = document.getElementById("hud-gap");
       gapHud.textContent = "Gap " + view.gapAtRequestedSize.text;
-      gapHud.className = "pill";
-      const gapText = view.gapAtRequestedSize.text;
-      if (gapText.startsWith("-") || gapText.startsWith("−")) gapHud.classList.add("down");
-      else if (gapText.startsWith("+")) gapHud.classList.add("up");
+      gapHud.className = "pill " + gapTone(view.gapAtRequestedSize.text);
       document.getElementById("hud-regime").textContent = view.issuerPeriod.text;
 
       const withheld = document.getElementById("withheld");
@@ -1011,35 +1437,35 @@
         withheld.classList.add("hidden");
         comparison.classList.remove("hidden");
       }
-
-      field("effective", view.effectiveUsd);
-      field("reference", view.referencePrice);
+      field("effective", view.effectiveUsd, { animate: true });
+      field("reference", view.referencePrice, { animate: true });
       document.getElementById("reference-meta").textContent =
         view.referenceSource + ". Fetched " + view.referenceFetchedAt + ". " + view.referenceAgeNote;
       document.getElementById("gap-size-label").textContent = view.requestedSizeLabel;
-      field("gap-size", view.gapAtRequestedSize);
+      field("gap-size", view.gapAtRequestedSize, { animate: true, tone: true });
       document.getElementById("gap-min-label").textContent = view.minSizeLabel;
-      field("gap-min", view.gapAtMinSize);
+      field("gap-min", view.gapAtMinSize, { animate: true, tone: true });
       const same = document.getElementById("same-size");
       same.textContent = view.sameSizeNote ?? "";
       same.classList.toggle("hidden", !view.sameSizeNote);
+      placeScale(view.effectiveUsd.text, view.referencePrice.text, view.gapAtRequestedSize.text);
+      fillTrace(view);
 
-      field("market", view.okxMarketPrice);
-      field("index", view.okxIndexPrice);
-      field("divergence", view.indexDivergence);
+      field("market", view.okxMarketPrice, { animate: true });
+      field("index", view.okxIndexPrice, { animate: true });
+      field("divergence", view.indexDivergence, { animate: true });
       document.getElementById("index-note").textContent = view.indexNote;
-
+      const indexCards = document.getElementById("index-cards");
+      indexCards.classList.remove("arrive");
+      if (!reduceMotion()) {
+        void indexCards.offsetWidth;
+        indexCards.classList.add("arrive");
+      }
       const controls = document.getElementById("controls");
       controls.replaceChildren();
       for (const control of view.controls) {
         const tr = document.createElement("tr");
-        for (const cell of [
-          control.symbol,
-          control.market,
-          control.index,
-          control.divergence,
-          control.identical ? "same value" : "diverged",
-        ]) {
+        for (const cell of [control.symbol, control.market, control.index, control.divergence, control.identical ? "same value" : "different values"]) {
           const td = document.createElement("td");
           td.textContent = cell;
           tr.appendChild(td);
@@ -1047,7 +1473,6 @@
         controls.appendChild(tr);
       }
       document.getElementById("controls-note").textContent = view.controlsNote;
-
       document.getElementById("parity-heading").textContent = view.quoteTokenSymbol + " parity applied to this reading";
       definition("parity", [
         ["USD per " + view.quoteTokenSymbol, view.quoteTokenParity.text],
@@ -1055,19 +1480,10 @@
         ["read at", view.quoteTokenFetchedAt],
       ]);
       const parityExtra = document.getElementById("parity-extra");
-      if (view.quoteTokenParity.reason) {
-        parityExtra.textContent = view.quoteTokenParity.reason;
-        parityExtra.classList.remove("hidden");
-      } else {
-        parityExtra.textContent = "";
-        parityExtra.classList.add("hidden");
-      }
-
-      document.getElementById("route").textContent = view.requestedRoute;
-      head("ladder-head", view.ladderHeaders);
-      rows("ladder", view.ladder);
+      parityExtra.textContent = view.quoteTokenParity.reason || "";
+      parityExtra.classList.toggle("hidden", !view.quoteTokenParity.reason);
+      renderLadder(view);
       document.getElementById("ladder-note").textContent = view.ladderNote;
-
       definition("pools-summary", [
         ["headline liquidity", view.totalLiquidity.text],
         ["stable-quoted share", view.stableShare.text],
@@ -1075,7 +1491,6 @@
       head("pool-head", view.poolHeaders);
       rows("pools", view.pools);
       document.getElementById("pool-note").textContent = view.poolNote;
-
       const warnings = document.getElementById("warnings");
       const warningSection = document.getElementById("warnings-section");
       warnings.replaceChildren();
@@ -1085,7 +1500,6 @@
         li.textContent = warning;
         warnings.appendChild(li);
       }
-
       definition("session", [
         ["currentPeriod", view.issuerPeriod.text],
         ["openNow", view.issuerOpenNow.text],
@@ -1095,7 +1509,6 @@
         ["wrapper rate", view.wrapRate.text + " [" + view.normalizationStatus + "]"],
       ]);
       document.getElementById("local-session").textContent = view.localSessionCrossCheck;
-
       definition("provenance", [
         ["sample", view.sampleId],
         ["taken at", view.sampledAt],
@@ -1105,28 +1518,27 @@
         ["calc", view.calcVersion],
         ["cli", view.cliVersion],
       ]);
-
       const prepare = document.getElementById("prepare");
       prepare.dataset.sampleId = view.sampleId;
       prepare.classList.toggle("hidden", view.comparisonHidden);
       document.getElementById("confirm").classList.add("hidden");
-      reveal(document.getElementById("comparison"));
-      document.getElementById("comparison").scrollIntoView({ behavior: "smooth", block: "start" });
+      if (!tabPinned && !reduceMotion()) comparison.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     function showPreparation(view) {
-      setTab("reading");
+      if (!tabPinned) setTab("reading");
       const confirm = document.getElementById("confirm");
       confirm.classList.remove("hidden");
+      document.getElementById("prep-unsigned").textContent = "No transaction has been signed or submitted.";
       document.getElementById("confirm-state").textContent =
         view.state + ". Fresh quote at " + view.freshTakenAt + ". The panel quote from " + view.panelTakenAt + " was not reused.";
-      field("prep-effective", view.effectiveUsd);
+      field("prep-effective", view.effectiveUsd, { animate: true });
       field("prep-min", view.minReceive);
       const units = document.getElementById("prep-units");
       units.textContent = view.minReceiveUnits.reason
         ? view.minReceiveUnits.reason
-        : "Router units (USDG, 6 decimals): " + view.minReceiveUnits.text + ". USD value " + view.proceedsUsd.text + ". No tolerance subtracted.";
-      field("prep-gap", view.gap);
+        : "Prepared parameter, router units (USDG, 6 decimals): " + view.minReceiveUnits.text + ". USD value " + view.proceedsUsd.text + ". No tolerance subtracted. Not passed to a router.";
+      field("prep-gap", view.gap, { tone: true });
       document.getElementById("prep-deadline").textContent = view.deadline.text;
       definition("prep-move", [
         ["panel effective", view.panelEffectiveUsd.text],
@@ -1134,10 +1546,152 @@
         ["quote moved", view.quoteMove.text],
       ]);
       document.getElementById("prep-notice").textContent = view.notice;
-      document.getElementById("prep-protection").textContent = view.protection;
-      reveal(confirm);
     }
 
+    function seriesSignature(body) {
+      return [body.count, body.windowStart, body.windowEnd, body.calcVersion, body.excludedOtherVersions].join("|");
+    }
+    function paintSeries(body, allowAnimate) {
+      const windowText = document.getElementById("series-window");
+      windowText.textContent = body.windowText;
+      document.getElementById("series-regimes").textContent = body.regimeText;
+      document.getElementById("series-claim").textContent = body.claimText;
+      const facts = document.getElementById("series-facts");
+      facts.replaceChildren();
+      for (const [label, value] of [
+        ["Observations", String(body.count)],
+        ["First", body.windowStart],
+        ["Last", body.windowEnd],
+        ["Calculation", body.calcVersion],
+        ["Other versions left out", String(body.excludedOtherVersions)],
+      ]) {
+        const span = document.createElement("span");
+        span.textContent = label + " " + value;
+        facts.appendChild(span);
+      }
+      const grouped = new Map();
+      for (const row of body.rows || []) {
+        const time = Date.parse(row.sampledAt);
+        if (!Number.isFinite(time)) continue;
+        const list = grouped.get(row.symbol) || [];
+        list.push({ ...row, t: time });
+        grouped.set(row.symbol, list);
+      }
+      const gaps = [];
+      for (const [symbol, list] of grouped) {
+        list.sort((a, b) => a.t - b.t);
+        for (let index = 1; index < list.length; index += 1) {
+          const delta = list[index].t - list[index - 1].t;
+          if (delta > GAP_MS) gaps.push({ symbol, from: list[index - 1].sampledAt, to: list[index].sampledAt, minutes: Math.round(delta / 60000) });
+        }
+      }
+      const coverage = document.getElementById("series-coverage");
+      const gapList = document.getElementById("series-gaps");
+      gapList.replaceChildren();
+      if (!body.count) coverage.textContent = "No stored readings to plot.";
+      else if (gaps.length) coverage.textContent = gaps.length + (gaps.length === 1 ? " gap is" : " gaps are") + " longer than six minutes between consecutive readings of the same asset. Those intervals are not filled in. This is not continuous five-minute coverage.";
+      else coverage.textContent = "No pair of consecutive readings for the same asset in this log is more than six minutes apart. The sampler schedule is five minutes. This describes the stored rows only.";
+      gapList.classList.toggle("hidden", gaps.length === 0);
+      for (const gap of gaps) {
+        const li = document.createElement("li");
+        li.textContent = gap.symbol + " · " + gap.from + " → " + gap.to + " · " + gap.minutes + " min";
+        gapList.appendChild(li);
+      }
+      drawChart(grouped, allowAnimate && !reduceMotion());
+      head("series-head", body.headers);
+      const seriesRows = document.getElementById("series-rows");
+      seriesRows.replaceChildren();
+      for (const row of body.rows || []) {
+        const tr = document.createElement("tr");
+        const cells = [row.sampledAt, row.symbol, row.issuerPeriod, row.gap, row.sizeTokens];
+        cells.forEach((cell, index) => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          if (index === 2) td.className = periodClass(cell);
+          tr.appendChild(td);
+        });
+        seriesRows.appendChild(tr);
+      }
+    }
+    function drawChart(grouped, animate) {
+      const svg = document.getElementById("tape-chart");
+      const readout = document.getElementById("tape-readout");
+      svg.replaceChildren();
+      const points = [];
+      for (const list of grouped.values()) {
+        for (const row of list) {
+          const gap = parseNum(row.gap);
+          if (gap === null) continue;
+          points.push({ ...row, g: gap });
+        }
+      }
+      if (!points.length) {
+        readout.textContent = bodyCountMessage();
+        return;
+      }
+      const times = points.map((point) => point.t);
+      const gaps = points.map((point) => point.g);
+      const t0 = Math.min(...times);
+      const t1 = Math.max(...times);
+      const g0 = Math.min(...gaps);
+      const g1 = Math.max(...gaps);
+      const spanT = t1 - t0 || 1;
+      const spanG = g1 - g0 || 1;
+      const x = (time) => 36 + ((time - t0) / spanT) * 660;
+      const y = (gap) => 24 + (1 - (gap - g0) / spanG) * 160;
+      const describe = (point) => point.symbol + " · " + point.sampledAt + " · period " + point.issuerPeriod + " · gap " + point.gap + " · size " + point.sizeTokens;
+      const showPoint = (point) => { readout.textContent = describe(point); };
+      for (const [symbol, list] of grouped) {
+        const ordered = list.slice().sort((a, b) => a.t - b.t);
+        let segment = [];
+        const flush = () => {
+          if (segment.length < 2) { segment = []; return; }
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("class", "series" + (symbol === "TSLAx" ? " tsla" : symbol === "AAPLx" ? " aapl" : ""));
+          path.setAttribute("d", segment.map((point, index) => (index ? "L" : "M") + x(point.t).toFixed(1) + " " + y(point.g).toFixed(1)).join(" "));
+          if (symbol === "TSLAx") path.setAttribute("stroke-dasharray", "4 3");
+          if (symbol === "AAPLx") path.setAttribute("stroke-dasharray", "1 3");
+          svg.appendChild(path);
+          if (animate) {
+            const length = path.getTotalLength();
+            path.style.strokeDasharray = String(length);
+            path.style.strokeDashoffset = String(length);
+            path.classList.add("draw");
+          }
+          segment = [];
+        };
+        for (const row of ordered) {
+          const gap = parseNum(row.gap);
+          const prev = segment[segment.length - 1];
+          if (gap === null || (prev && row.t - prev.t > GAP_MS)) flush();
+          if (gap === null) continue;
+          segment.push({ ...row, g: gap });
+        }
+        flush();
+        for (const row of ordered) {
+          const gap = parseNum(row.gap);
+          if (gap === null) continue;
+          const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          dot.setAttribute("cx", x(row.t).toFixed(1));
+          dot.setAttribute("cy", y(gap).toFixed(1));
+          dot.setAttribute("r", "3.5");
+          dot.setAttribute("class", periodClass(row.issuerPeriod));
+          dot.setAttribute("tabindex", "0");
+          dot.setAttribute("role", "img");
+          dot.setAttribute("aria-label", describe(row));
+          const point = { ...row, g: gap };
+          dot.addEventListener("pointerenter", () => showPoint(point));
+          dot.addEventListener("focus", () => showPoint(point));
+          svg.appendChild(dot);
+        }
+      }
+      readout.textContent = "Select a stored point to read its source values.";
+    }
+    function bodyCountMessage() {
+      return seriesBody && seriesBody.count
+        ? "Stored rows exist, but none of them has a numeric gap to plot. Missing values are not drawn."
+        : "No stored readings to plot.";
+    }
     async function loadSeries() {
       const windowText = document.getElementById("series-window");
       try {
@@ -1147,113 +1701,232 @@
           windowText.textContent = body.error || "The recorded series could not be read.";
           return;
         }
-        windowText.textContent = body.windowText;
-        document.getElementById("series-regimes").textContent = body.regimeText;
-        document.getElementById("series-claim").textContent = body.claimText;
-        head("series-head", body.headers);
-        const seriesRows = document.getElementById("series-rows");
-        seriesRows.replaceChildren();
-        for (const row of body.rows) {
-          const tr = document.createElement("tr");
-          for (const cell of [row.sampledAt, row.symbol, row.issuerPeriod, row.gap, row.sizeTokens]) {
-            const td = document.createElement("td");
-            td.textContent = cell;
-            tr.appendChild(td);
-          }
-          seriesRows.appendChild(tr);
-        }
+        const visible = document.getElementById("panel-tape").classList.contains("active");
+        const signature = seriesSignature(body);
+        const animate = visible && signature !== chartAnimatedSig;
+        if (visible) chartAnimatedSig = signature;
+        seriesBody = body;
+        paintSeries(body, animate);
       } catch (error) {
         windowText.textContent = "The recorded series could not be read.";
       }
     }
-
+    function explorerAddress(address) {
+      return /^0x[a-fA-F0-9]{40}$/.test(address) ? "https://www.oklink.com/x-layer/evm/address/" + address : "";
+    }
+    function link(href, text) {
+      if (!href) {
+        const span = document.createElement("span");
+        span.textContent = text;
+        return span;
+      }
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      anchor.textContent = text;
+      return anchor;
+    }
+    function renderRecord(body, animate) {
+      document.getElementById("record-claim").textContent = CLAIM + " Chain " + body.chainId + ", " + body.address + ".";
+      const reason = document.getElementById("record-reason");
+      reason.textContent = body.reason ?? "";
+      reason.classList.toggle("hidden", !body.reason);
+      const map = document.getElementById("attest-map");
+      map.replaceChildren();
+      map.hidden = false;
+      const fields = body.fields || [];
+      const find = (label) => fields.find((item) => item.label === label);
+      const hash = find("sources hash");
+      const token = find("token address");
+      const id = find("id");
+      const rows = [
+        ["Contract", body.address, explorerAddress(body.address || "")],
+        ["Attestor", ATTESTOR + " · dedicated writer, not this page", explorerAddress(ATTESTOR)],
+        ["Sources hash", hash ? hash.text : "—", ""],
+      ];
+      if (id && id.text === "0") rows.push(["Known write", MEASUREMENT_ZERO_TX + " · measurement 0, not a transaction from this page", "https://www.oklink.com/x-layer/evm/tx/" + MEASUREMENT_ZERO_TX]);
+      if (token && token.text && token.text !== "—") rows.splice(1, 0, ["Token", token.text, explorerAddress(token.text)]);
+      for (const [label, text, href] of rows) {
+        const div = document.createElement("div");
+        const strong = document.createElement("strong");
+        strong.textContent = label;
+        div.append(strong, link(href, text));
+        map.appendChild(div);
+      }
+      const list = document.getElementById("record-fields");
+      list.replaceChildren();
+      fields.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.className = "record-field" + (animate && !reduceMotion() ? " enter" : "");
+        if (animate && !reduceMotion()) row.style.animationDelay = (index * 55) + "ms";
+        const k = document.createElement("div");
+        k.className = "k";
+        k.textContent = item.label;
+        const v = document.createElement("div");
+        v.textContent = item.reason ? item.text + " — " + item.reason : item.text;
+        row.append(k, v);
+        list.appendChild(row);
+      });
+    }
+    function setChainScanning(on) {
+      document.getElementById("chain-scan").classList.toggle("hidden", !on);
+    }
     async function loadRecord() {
       const claim = document.getElementById("record-claim");
       const reason = document.getElementById("record-reason");
+      setChainScanning(true);
       try {
         const response = await fetch("/api/record");
         const body = await response.json();
+        setChainScanning(false);
         if (!response.ok || body.error) {
           claim.textContent = "The on-chain record could not be read.";
           reason.textContent = body.error || "The contract read failed.";
           reason.classList.remove("hidden");
           return;
         }
-        claim.textContent = body.claim + " Chain " + body.chainId + ", " + body.address + ".";
-        reason.textContent = body.reason ?? "";
-        reason.classList.toggle("hidden", !body.reason);
-        definition(
-          "record-meta",
-          (body.fields || []).map((item) => [item.label, item.reason ? item.text + " — " + item.reason : item.text]),
-        );
+        recordBody = body;
+        renderRecord(body, document.getElementById("panel-chain").classList.contains("active"));
       } catch (error) {
+        setChainScanning(false);
         claim.textContent = "The on-chain record could not be read.";
         reason.textContent = "The contract read failed before a response came back.";
         reason.classList.remove("hidden");
       }
     }
 
+    function setTab(name) {
+      const tabs = [...document.querySelectorAll(".app-nav button")];
+      tabs.forEach((tab, index) => {
+        const on = tab.dataset.tab === name;
+        tab.classList.toggle("active", on);
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+        tab.tabIndex = on ? 0 : -1;
+        const panel = document.getElementById("panel-" + tab.dataset.tab);
+        panel.classList.toggle("active", on);
+        panel.hidden = !on;
+      });
+      if (name === "tape" && seriesBody) {
+        const signature = seriesSignature(seriesBody);
+        const animate = signature !== chartAnimatedSig;
+        chartAnimatedSig = signature;
+        paintSeries(seriesBody, animate);
+      }
+    }
+    document.getElementById("app-nav").addEventListener("keydown", (event) => {
+      const tabs = [...document.querySelectorAll(".app-nav button")];
+      const index = tabs.findIndex((tab) => tab.classList.contains("active"));
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      event.preventDefault();
+      const next = event.key === "ArrowRight" ? (index + 1) % tabs.length : (index - 1 + tabs.length) % tabs.length;
+      if (measuring) tabPinned = true;
+      setTab(tabs[next].dataset.tab);
+      tabs[next].focus();
+    });
+    for (const tab of document.querySelectorAll(".app-nav button")) {
+      tab.addEventListener("click", () => {
+        if (measuring) tabPinned = true;
+        setTab(tab.dataset.tab);
+        if (tab.dataset.tab === "tape") void loadSeries();
+      });
+    }
+
+    function enterInstrument() {
+      if (document.body.classList.contains("entered")) return;
+      if (reduceMotion()) {
+        document.body.classList.add("entered");
+        history.replaceState(null, "", "#instrument");
+        return;
+      }
+      document.body.classList.add("opening");
+      window.setTimeout(() => {
+        document.body.classList.remove("opening");
+        document.body.classList.add("entered");
+        history.replaceState(null, "", "#instrument");
+      }, 880);
+    }
+    function leaveInstrument() {
+      document.body.classList.remove("entered", "opening");
+      history.replaceState(null, "", location.pathname);
+      window.scrollTo(0, 0);
+    }
+    document.getElementById("enter").addEventListener("click", enterInstrument);
+    document.getElementById("leave").addEventListener("click", leaveInstrument);
+    document.getElementById("home").addEventListener("click", leaveInstrument);
+    if (location.hash === "#instrument") document.body.classList.add("entered");
+
+    form.addEventListener("change", markStale);
     document.getElementById("prepare").addEventListener("click", async () => {
       const prepare = document.getElementById("prepare");
-      const data = new FormData(form);
-      const symbol = String(data.get("symbol") ?? "");
-      const size = String(data.get("size") ?? "");
+      const { symbol, size } = selection();
       const sampleId = prepare.dataset.sampleId ?? "";
+      const generation = ++panelGeneration;
       document.getElementById("confirm").classList.add("hidden");
       setStatus("Taking a fresh quote. The panel reading will not be the one prepared.", "busy");
       prepare.disabled = true;
       button.disabled = true;
+      measuring = true;
+      tabPinned = false;
       try {
-        const response = await fetch(
-          "/api/prepare?symbol=" + encodeURIComponent(symbol) +
-            "&size=" + encodeURIComponent(size) +
-            "&sampleId=" + encodeURIComponent(sampleId),
-        );
+        const response = await fetch("/api/prepare?symbol=" + encodeURIComponent(symbol) + "&size=" + encodeURIComponent(size) + "&sampleId=" + encodeURIComponent(sampleId));
         const body = await response.json();
+        if (generation !== panelGeneration) return;
         if (!response.ok || body.error) {
           setStatus(body.error || "The fresh quote failed.", "error");
           return;
         }
         showPreparation(body);
-        setStatus("Prepared " + body.symbol + " from a new quote. Nothing was signed.", "done");
+        setStatus("Prepared " + body.symbol + " from a new quote. No transaction has been signed or submitted.", "done");
       } catch (error) {
+        if (generation !== panelGeneration) return;
         setStatus("The fresh quote failed before a sample came back.", "error");
       } finally {
-        prepare.disabled = false;
-        button.disabled = false;
+        if (generation === panelGeneration) {
+          prepare.disabled = false;
+          button.disabled = false;
+          measuring = false;
+        }
       }
     });
-
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const data = new FormData(form);
-      const symbol = String(data.get("symbol") ?? "");
-      const size = String(data.get("size") ?? "");
-      results.classList.add("hidden");
-      document.getElementById("empty-state").classList.remove("hidden");
-      document.getElementById("depth-body").classList.add("hidden");
-      document.getElementById("depth-empty").classList.remove("hidden");
-      document.getElementById("tape-bar").classList.add("hidden");
-      document.getElementById("confirm").classList.add("hidden");
+      const { symbol, size } = selection();
+      const generation = ++panelGeneration;
+      measuring = true;
+      tabPinned = false;
       setTab("reading");
-      setStatus("Reading the router, the issuer, and X Layer.", "busy");
+      document.getElementById("empty-state").classList.add("hidden");
+      document.getElementById("confirm").classList.add("hidden");
+      setPipelineRunning(symbol, size);
+      setStatus("Reading the router, the wrapper, USDG/USD, and the issuer reference.", "busy");
       button.disabled = true;
       try {
         const response = await fetch("/api/panel?symbol=" + encodeURIComponent(symbol) + "&size=" + encodeURIComponent(size));
         const body = await response.json();
+        if (generation !== panelGeneration) return;
         if (!response.ok || body.error) {
+          setPipelineError(body.error || "The reading failed.");
           setStatus(body.error || "The reading failed.", "error");
           return;
         }
         show(body);
         setStatus("Live reading for " + body.symbol + " at " + body.sampledAt + ".", "done");
       } catch (error) {
+        if (generation !== panelGeneration) return;
+        setPipelineError("The reading failed before a sample came back.");
         setStatus("The reading failed before a sample came back.", "error");
       } finally {
-        button.disabled = false;
+        if (generation === panelGeneration) {
+          button.disabled = false;
+          measuring = false;
+          button.classList.remove("is-live");
+          if (!button.textContent || button.textContent === "Requesting router quote") button.textContent = "Check this size";
+        }
       }
     });
 
+    refreshCaption();
     void loadSeries();
     void loadRecord();
   </script>

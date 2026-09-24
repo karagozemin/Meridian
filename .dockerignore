@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.env
+.env.*
+logs
+PRD.md
+TODO.md
+artifacts
+cache
+broadcast
+typechain-types
+*.log
+.DS_Store

@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: meridian
+    runtime: docker
+    plan: starter
+    healthCheckPath: /
+    disk:
+      name: onchainos
+      mountPath: /root/.onchainos
+      sizeGB: 1
