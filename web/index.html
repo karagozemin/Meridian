@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Meridian — the price a sell actually clears at</title>
+  <link rel="icon" href="/meridian.png" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -73,11 +74,36 @@
       padding-bottom: 20px;
     }
     .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       font-family: "Instrument Serif", Palatino, serif;
       font-size: 21px;
       letter-spacing: 0.01em;
     }
     .brand em { font-style: italic; color: var(--acid); }
+    button.brand {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      text-align: left;
+    }
+    button.brand:hover { color: var(--acid); }
+    button.brand:focus-visible { outline: 2px solid var(--acid); outline-offset: 4px; }
+    .logo {
+      width: 34px;
+      height: 34px;
+      overflow: hidden;
+      flex: none;
+    }
+    .logo img {
+      display: block;
+      width: 118px;
+      height: 118px;
+      margin: -42px;
+    }
 
     .gate-body {
       flex: 1;
@@ -565,7 +591,7 @@
   <!-- ─────────── landing ─────────── -->
   <section id="gate">
     <div class="wrap gate-head">
-      <div class="brand">Meri<em>dian</em></div>
+      <div class="brand"><span class="logo"><img src="/meridian.png" alt="" /></span><span class="word">Meri<em>dian</em></span></div>
       <div class="tag">X Layer · chain 196 · tokenized stocks</div>
     </div>
 
@@ -612,7 +638,7 @@
   <div id="desk">
     <div class="topbar">
       <div class="wrap">
-        <div class="brand">Meri<em>dian</em></div>
+        <button type="button" class="brand" id="home" aria-label="Back to the landing page"><span class="logo"><img src="/meridian.png" alt="" /></span><span class="word">Meri<em>dian</em></span></button>
         <div class="tag">Instrument · does not sign</div>
         <button type="button" id="leave">Back</button>
       </div>
@@ -873,11 +899,14 @@
     }
 
     document.getElementById("enter").addEventListener("click", enterInstrument);
-    document.getElementById("leave").addEventListener("click", () => {
+    function leaveInstrument() {
       document.body.classList.remove("entered");
       history.replaceState(null, "", location.pathname);
       window.scrollTo(0, 0);
-    });
+    }
+
+    document.getElementById("leave").addEventListener("click", leaveInstrument);
+    document.getElementById("home").addEventListener("click", leaveInstrument);
     if (location.hash === "#instrument") document.body.classList.add("entered");
 
     function setTab(name) {

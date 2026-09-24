@@ -21,6 +21,7 @@ import type { Sample } from "../types.js";
 
 const PORT = Number(process.env.PORT ?? 4173);
 const PAGE = resolve(process.cwd(), "web/index.html");
+const MARK = resolve(process.cwd(), "meridian.png");
 const MAX_SIZE = 10_000;
 
 /** Panel readings kept only so a later prepare can show how the quote moved. Not the sample log. */
@@ -139,6 +140,16 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
       return;
     }
     sendJson(res, 200, await presentRecord(Number(raw)));
+    return;
+  }
+
+  if (url.pathname === "/meridian.png" && req.method === "GET") {
+    const png = await readFile(MARK);
+    res.writeHead(200, {
+      "content-type": "image/png",
+      "cache-control": "no-store",
+    });
+    res.end(png);
     return;
   }
 
