@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="meridian.png" alt="Meridian" width="200" />
+  <img src="meridian.png" alt="Meridian" width="300" />
 </p>
 
 # Meridian
