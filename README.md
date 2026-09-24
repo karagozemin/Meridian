@@ -8,7 +8,7 @@ Meridian measures what a tokenized-stock **sale** on X Layer would actually clea
 
 It is a pre-trade instrument. It is not a wallet, not a router, and not a fair-value oracle.
 
-How the pieces fit is in [ARCHITECTURE.md](ARCHITECTURE.md).
+How the pieces fit is in [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ## What Meridian is
 
