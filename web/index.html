@@ -344,13 +344,13 @@
     }
     @keyframes signal { from { background-position: -20% 0; } to { background-position: 120% 0; } }
     .node {
-      min-height: 92px;
+      min-height: 0;
       padding: 10px 10px 12px;
       background: var(--sunk);
       border: 1px solid var(--line);
     }
     .node .name { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
-    .node .detail { display: block; margin-top: 8px; min-height: 2.6em; color: var(--faint); font-size: 12px; line-height: 1.35; }
+    .node .detail { display: block; margin-top: 6px; min-height: 0; color: var(--faint); font-size: 12px; line-height: 1.35; }
     .mark {
       display: inline-grid;
       place-items: center;
@@ -843,7 +843,7 @@
                 <div class="tag">Effective · USD per underlying share</div>
                 <div class="figure" id="effective"></div>
                 <p class="reason hidden" id="effective-reason"></p>
-                <p class="note">Fees and route impact included. Not a fair value.</p>
+                <p class="note">Not a fair value.</p>
               </div>
               <div>
                 <div class="tag">Issuer reference · USD per share</div>
@@ -860,7 +860,7 @@
                     <span class="marker ref" id="marker-ref">Reference</span>
                     <span class="marker eff" id="marker-eff">Router</span>
                   </div>
-                  <p class="scale-gap" id="scale-gap"></p>
+                  <p class="scale-gap hidden" id="scale-gap"></p>
                 </div>
                 <div class="sub">
                   <div class="tag" id="gap-min-label">Gap at smallest size</div>
@@ -882,7 +882,6 @@
           </section>
           <div class="action-bar">
             <button type="button" id="prepare" class="hidden">Prepare trade parameters</button>
-            <p class="note" style="margin:0">A second quote. Nothing is signed or submitted on this page.</p>
           </div>
           <div id="confirm" class="hidden">
             <p class="unsigned" id="prep-unsigned">No transaction has been signed or submitted.</p>
@@ -894,7 +893,7 @@
                 <p class="reason hidden" id="prep-effective-reason"></p>
               </div>
               <div>
-                <div class="tag">Prepared parameter · minimum received</div>
+                <div class="tag">Minimum received</div>
                 <div class="figure sm" id="prep-min"></div>
                 <p class="reason hidden" id="prep-min-reason"></p>
                 <p class="note" id="prep-units"></p>
@@ -904,9 +903,8 @@
                 <div class="figure sm" id="prep-gap"></div>
                 <p class="reason hidden" id="prep-gap-reason"></p>
                 <div class="sub">
-                  <div class="tag">Prepared parameter · deadline</div>
+                  <div class="tag">Deadline</div>
                   <div class="figure xs mono" id="prep-deadline"></div>
-                  <p class="note">Displayed from the fresh quote. Not passed to a router. Not active protection.</p>
                 </div>
               </div>
             </div>
@@ -1045,7 +1043,7 @@
       </div>
 
       <footer>
-        Meridian shows measured prices and the source each one came from. It does not compute a fair value. A difference from the issuer reference is a measurement, not protection. No transaction is signed or submitted on this page. Minimum received and the deadline, when shown, are prepared parameters. They are not passed to a router.
+        Meridian measures a sale. It does not sign, submit, or compute a fair value.
       </footer>
     </main>
   </div>
@@ -1198,8 +1196,12 @@
     }
     function refreshCaption() {
       const { symbol, size } = selection();
-      document.getElementById("run-caption").textContent =
-        "Requests a fresh router quote for " + size + " wrapped " + symbol + " into USDG. Nothing is signed or submitted.";
+      if (!hasReading) {
+        document.getElementById("run-caption").textContent =
+          "Asks the router for this size. Nothing is signed.";
+      } else {
+        document.getElementById("run-caption").textContent = "";
+      }
     }
     function markStale() {
       if (!hasReading) {
@@ -1214,7 +1216,7 @@
       document.getElementById("depth-body").classList.toggle("is-stale", stale);
       if (stale && !measuring) {
         button.textContent = "Request a fresh measurement";
-        setStatus("Previous reading is stale. The next check requests a fresh measurement.", "stale");
+        setStatus("Selection changed. Check again for a new reading.", "stale");
       }
       refreshCaption();
     }
@@ -1247,8 +1249,9 @@
     }
     function classify(view) {
       const requested = (view.ladder || []).find((row) => row.requested);
+      const routeText = view.requestedRoute && view.requestedRoute !== "—" ? view.requestedRoute.split(",")[0] : "Quote returned";
       const route = requested
-        ? { state: "done", detail: view.requestedRoute && view.requestedRoute !== "—" ? view.requestedRoute : "Router returned a quote for this size." }
+        ? { state: "done", detail: routeText }
         : { state: "fail", detail: view.effectiveUsd?.reason || "The router did not return a quote for this size." };
       const wrapBad = view.normalizationStatus !== "verified" || Boolean(view.wrapRate?.reason);
       const parityBad = Boolean(view.quoteTokenParity?.reason);
@@ -1256,17 +1259,17 @@
       if (route.state !== "done") norm = { state: "stopped", detail: "Stopped. No router quote to normalize." };
       else if (wrapBad) norm = { state: "fail", detail: view.wrapRate?.reason || "The wrapper ratio was not read." };
       else if (parityBad) norm = { state: "fail", detail: view.quoteTokenParity.reason };
-      else norm = { state: "done", detail: view.wrapRate.text + ". USDG/USD " + view.quoteTokenParity.text + "." };
+      else norm = { state: "done", detail: "Wrapper and USDG/USD" };
       let compare;
-      if (norm.state !== "done") compare = { state: "stopped", detail: "Stopped. Normalization did not complete." };
+      if (norm.state !== "done") compare = { state: "stopped", detail: "Stopped." };
       else if (view.comparisonHidden || view.referencePrice?.text === "—" || view.referencePrice?.reason) {
         compare = { state: "fail", detail: view.comparisonHiddenReason || view.referencePrice?.reason || "The issuer reference was not read." };
       } else if (view.gapAtRequestedSize?.reason) compare = { state: "fail", detail: view.gapAtRequestedSize.reason };
-      else compare = { state: "done", detail: "Issuer period " + view.issuerPeriod.text + ". Reference " + view.referencePrice.text + "." };
+      else compare = { state: "done", detail: view.issuerPeriod.text };
       let ready;
-      if (compare.state !== "done") ready = { state: "stopped", detail: view.effectiveUsd?.reason || "Effective USD per share was not produced." };
+      if (compare.state !== "done") ready = { state: "stopped", detail: "No USD per share." };
       else if (view.effectiveUsd?.reason || view.effectiveUsd?.text === "—") ready = { state: "fail", detail: view.effectiveUsd?.reason || "Effective USD per share is missing." };
-      else ready = { state: "done", detail: view.effectiveUsd.text + " USD per underlying share." };
+      else ready = { state: "done", detail: view.effectiveUsd.text };
       return { route, norm, compare, ready };
     }
     function setPipelineResult(view) {
@@ -1280,14 +1283,8 @@
       document.getElementById("pipeline-label").textContent = stages.ready.state === "done"
         ? "Measurement ready"
         : (failed ? failed.detail : "The measurement stopped.");
+      document.getElementById("quote-route").replaceChildren();
       const routeName = view.requestedRoute && view.requestedRoute !== "—" ? view.requestedRoute : "route not returned";
-      const routeFailed = stages.route.state !== "done";
-      renderRoute(document.getElementById("quote-route"), [
-        { label: (view.requestedSizeLabel || "").split(" ")[0] + " wrapped " + view.symbol, fail: routeFailed },
-        { label: routeName, fail: routeFailed || routeName === "route not returned" },
-        { label: view.quoteTokenSymbol || "USDG", fail: Boolean(view.quoteTokenParity?.reason) },
-        { label: stages.ready.state === "done" ? view.effectiveUsd.text + " USD / share" : "USD / share", fail: stages.ready.state !== "done" },
-      ], false);
       renderRoute(document.getElementById("depth-route"), [
         view.symbol + " wrapped",
         routeName,
@@ -1431,8 +1428,7 @@
       if (!tabPinned) setTab("reading");
       setPipelineResult(view);
 
-      const bar = document.getElementById("tape-bar");
-      bar.classList.remove("hidden");
+      document.getElementById("tape-bar").classList.add("hidden");
       document.getElementById("hud-symbol").textContent = view.symbol;
       document.getElementById("hud-size").textContent = selection().size + " wrapped";
       document.getElementById("hud-effective").textContent = "Eff " + view.effectiveUsd.text;
@@ -1454,10 +1450,10 @@
       field("effective", view.effectiveUsd, { animate: true });
       field("reference", view.referencePrice, { animate: true });
       document.getElementById("reference-meta").textContent =
-        view.referenceSource + ". Fetched " + view.referenceFetchedAt + ". " + view.referenceAgeNote;
-      document.getElementById("gap-size-label").textContent = view.requestedSizeLabel;
+        "Fetched " + clock(view.referenceFetchedAt) + ". The issuer does not say when this price was produced.";
+      document.getElementById("gap-size-label").textContent = selection().size + ", including size";
       field("gap-size", view.gapAtRequestedSize, { animate: true, tone: true });
-      document.getElementById("gap-min-label").textContent = view.minSizeLabel;
+      document.getElementById("gap-min-label").textContent = "Smallest size, price only";
       field("gap-min", view.gapAtMinSize, { animate: true, tone: true });
       const same = document.getElementById("same-size");
       same.textContent = view.sameSizeNote ?? "";
@@ -1491,7 +1487,7 @@
       definition("parity", [
         ["USD per " + view.quoteTokenSymbol, view.quoteTokenParity.text],
         ["off parity", view.quoteTokenDeviation.text],
-        ["read at", view.quoteTokenFetchedAt],
+        ["read at", clock(view.quoteTokenFetchedAt)],
       ]);
       const parityExtra = document.getElementById("parity-extra");
       parityExtra.textContent = view.quoteTokenParity.reason || "";
@@ -1517,7 +1513,7 @@
       definition("session", [
         ["currentPeriod", view.issuerPeriod.text],
         ["openNow", view.issuerOpenNow.text],
-        ["next change", view.issuerNextChange.text],
+        ["next change", clock(view.issuerNextChange.text)],
         ["halted", view.issuerHalt.text],
         ["hours", view.issuerHours.text],
         ["wrapper rate", view.wrapRate.text + " [" + view.normalizationStatus + "]"],
@@ -1525,7 +1521,7 @@
       document.getElementById("local-session").textContent = view.localSessionCrossCheck;
       definition("provenance", [
         ["sample", view.sampleId],
-        ["taken at", view.sampledAt],
+        ["taken at", clock(view.sampledAt)],
         ["duration", view.durationMs],
         ["asset", view.symbol + " (" + view.underlying + ")"],
         ["address", view.address],
@@ -1545,21 +1541,22 @@
       confirm.classList.remove("hidden");
       document.getElementById("prep-unsigned").textContent = "No transaction has been signed or submitted.";
       document.getElementById("confirm-state").textContent =
-        view.state + ". Fresh quote at " + view.freshTakenAt + ". The panel quote from " + view.panelTakenAt + " was not reused.";
+        "Fresh quote. The number above was not reused.";
       field("prep-effective", view.effectiveUsd, { animate: true });
       field("prep-min", view.minReceive);
       const units = document.getElementById("prep-units");
       units.textContent = view.minReceiveUnits.reason
         ? view.minReceiveUnits.reason
-        : "Prepared parameter, router units (USDG, 6 decimals): " + view.minReceiveUnits.text + ". USD value " + view.proceedsUsd.text + ". No tolerance subtracted. Not passed to a router.";
+        : view.minReceiveUnits.text + " units · " + view.proceedsUsd.text + " USD";
       field("prep-gap", view.gap, { tone: true });
-      document.getElementById("prep-deadline").textContent = view.deadline.text;
+      document.getElementById("prep-deadline").textContent = clock(view.deadline.text);
       definition("prep-move", [
         ["panel effective", view.panelEffectiveUsd.text],
         ["fresh effective", view.freshEffectiveUsd.text],
         ["quote moved", view.quoteMove.text],
       ]);
-      document.getElementById("prep-notice").textContent = view.notice;
+      document.getElementById("prep-notice").textContent =
+        "Minimum received and the deadline are prepared parameters. They are not sent.";
     }
 
     function seriesSignature(body) {
@@ -1567,15 +1564,15 @@
     }
     function paintSeries(body, allowAnimate) {
       const windowText = document.getElementById("series-window");
-      windowText.textContent = body.windowText;
+      windowText.textContent = clockText(body.windowText);
       document.getElementById("series-regimes").textContent = body.regimeText;
       document.getElementById("series-claim").textContent = body.claimText;
       const facts = document.getElementById("series-facts");
       facts.replaceChildren();
       for (const [label, value] of [
         ["Observations", String(body.count)],
-        ["First", body.windowStart],
-        ["Last", body.windowEnd],
+        ["First", clock(body.windowStart)],
+        ["Last", clock(body.windowEnd)],
         ["Calculation", body.calcVersion],
         ["Other versions left out", String(body.excludedOtherVersions)],
       ]) {
@@ -1608,7 +1605,7 @@
       gapList.classList.toggle("hidden", gaps.length === 0);
       for (const gap of gaps) {
         const li = document.createElement("li");
-        li.textContent = gap.symbol + " · " + gap.from + " → " + gap.to + " · " + gap.minutes + " min";
+        li.textContent = gap.symbol + " · " + clock(gap.from) + " → " + clock(gap.to) + " · " + gap.minutes + " min";
         gapList.appendChild(li);
       }
       drawChart(grouped, allowAnimate && !reduceMotion());
@@ -1620,7 +1617,7 @@
         const cells = [row.sampledAt, row.symbol, row.issuerPeriod, row.gap, row.sizeTokens];
         cells.forEach((cell, index) => {
           const td = document.createElement("td");
-          td.textContent = cell;
+          td.textContent = index === 0 ? clock(cell) : cell;
           if (index === 2) td.className = periodClass(cell);
           tr.appendChild(td);
         });
@@ -1632,12 +1629,25 @@
       for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
       return node;
     }
+    function clock(value) {
+      const text = String(value ?? "");
+      if (!/^\d{4}-\d{2}-\d{2}T/.test(text)) return text;
+      const ms = Date.parse(text);
+      if (!Number.isFinite(ms)) return text;
+      const date = new Date(ms);
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const pad = (n) => String(n).padStart(2, "0");
+      return date.getUTCDate() + " " + months[date.getUTCMonth()] + " " + date.getUTCFullYear() + ", " + pad(date.getUTCHours()) + ":" + pad(date.getUTCMinutes()) + ":" + pad(date.getUTCSeconds()) + " UTC";
+    }
+    function clockText(value) {
+      return String(value ?? "").replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g, (iso) => clock(iso));
+    }
     function formatUtc(ms) {
       const date = new Date(ms);
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const hh = String(date.getUTCHours()).padStart(2, "0");
       const mm = String(date.getUTCMinutes()).padStart(2, "0");
-      return date.getUTCDate() + " " + months[date.getUTCMonth()] + " " + hh + ":" + mm + " UTC";
+      return date.getUTCDate() + " " + months[date.getUTCMonth()] + ", " + hh + ":" + mm + " UTC";
     }
     function gapLabel(value) {
       const text = value.toFixed(Math.abs(value) >= 10 ? 1 : 2);
@@ -1950,7 +1960,7 @@
           return;
         }
         showPreparation(body);
-        setStatus("Prepared " + body.symbol + " from a new quote. No transaction has been signed or submitted.", "done");
+        setStatus("Prepared " + body.symbol + ".", "done");
       } catch (error) {
         if (generation !== panelGeneration) return;
         setStatus("The fresh quote failed before a sample came back.", "error");
@@ -1972,7 +1982,7 @@
       document.getElementById("empty-state").classList.add("hidden");
       document.getElementById("confirm").classList.add("hidden");
       setPipelineRunning(symbol, size);
-      setStatus("Reading the router, the wrapper, USDG/USD, and the issuer reference.", "busy");
+      setStatus("Reading the route.", "busy");
       button.disabled = true;
       try {
         const response = await fetch("/api/panel?symbol=" + encodeURIComponent(symbol) + "&size=" + encodeURIComponent(size));
@@ -1984,7 +1994,7 @@
           return;
         }
         show(body);
-        setStatus("Live reading for " + body.symbol + " at " + body.sampledAt + ".", "done");
+        setStatus(body.symbol + " measured.", "done");
       } catch (error) {
         if (generation !== panelGeneration) return;
         setPipelineError("The reading failed before a sample came back.");
